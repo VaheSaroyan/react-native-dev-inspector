@@ -1,0 +1,44 @@
+{
+  "name": "@rn-dev-inspector/metro-plugin",
+  "version": "1.0.5",
+  "description": "Metro plugin for React Native Dev Inspector - enables opening source files in editor",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "metro",
+    "react-native",
+    "inspector",
+    "devtools",
+    "editor"
+  ],
+  "license": "MIT",
+  "author": "VaheSaroyan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaheSaroyan/react-native-dev-inspector.git",
+    "directory": "packages/metro-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/VaheSaroyan/react-native-dev-inspector/issues"
+  },
+  "homepage": "https://github.com/VaheSaroyan/react-native-dev-inspector#readme",
+  "peerDependencies": {
+    "metro": ">=0.72.0",
+    "metro-config": ">=0.72.0"
+  },
+  "dependencies": {
+    "launch-editor": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0"
+  }
+}

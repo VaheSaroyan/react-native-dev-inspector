@@ -1,0 +1,203 @@
+/**
+ * Custom CSS for React Native Dev Inspector docs
+ * Modern gradient styling inspired by react-dev-inspector
+ */
+
+/* CSS Variables */
+:root {
+  --ifm-color-primary: #61dafb;
+  --ifm-color-primary-dark: #4ad4f9;
+  --ifm-color-primary-darker: #3ed1f9;
+  --ifm-color-primary-darkest: #12c4f7;
+  --ifm-color-primary-light: #78e1fc;
+  --ifm-color-primary-lighter: #84e4fd;
+  --ifm-color-primary-lightest: #b0edfe;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
+  /* Custom gradient colors */
+  --gradient-start: #667eea;
+  --gradient-mid: #764ba2;
+  --gradient-end: #f093fb;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-border: rgba(0, 0, 0, 0.1);
+  --text-muted: #666;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #61dafb;
+  --ifm-color-primary-dark: #4ad4f9;
+  --ifm-color-primary-darker: #3ed1f9;
+  --ifm-color-primary-darkest: #12c4f7;
+  --ifm-color-primary-light: #78e1fc;
+  --ifm-color-primary-lighter: #84e4fd;
+  --ifm-color-primary-lightest: #b0edfe;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+
+  /* Dark mode gradient colors */
+  --gradient-start: #667eea;
+  --gradient-mid: #764ba2;
+  --gradient-end: #f093fb;
+  --card-bg: #1e1e28;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --text-muted: #aaa;
+}
+
+/* Animated gradient background */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Hero gradient animation */
+.hero-gradient {
+  background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #61dafb);
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+/* Shimmer effect for buttons */
+.shimmer-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+/* Modern card styling */
+.modern-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 2rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.modern-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Logo grid styling */
+.logo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.logo-item:hover {
+  background: var(--card-bg);
+  transform: scale(1.05);
+}
+
+.logo-item svg,
+.logo-item img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+/* Code block enhancements */
+pre {
+  border-radius: 12px !important;
+}
+
+/* Navbar customization */
+.navbar {
+  backdrop-filter: blur(10px);
+  background: rgba(var(--ifm-background-color-rgb), 0.8);
+}
+
+[data-theme='dark'] .navbar {
+  background: rgba(30, 30, 40, 0.8);
+}
+
+/* Footer styling */
+.footer {
+  background: linear-gradient(180deg, var(--ifm-footer-background-color) 0%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Link hover effects */
+a:hover {
+  text-decoration: none;
+}
+
+/* Badge/tag styling */
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-primary {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid));
+  color: white;
+}
+
+/* Section dividers */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--card-border), transparent);
+  margin: 3rem 0;
+}

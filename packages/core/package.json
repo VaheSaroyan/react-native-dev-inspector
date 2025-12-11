@@ -1,0 +1,43 @@
+{
+  "name": "@rn-dev-inspector/core",
+  "version": "1.0.5",
+  "description": "Core inspector component for React Native Dev Inspector",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "react-native",
+    "inspector",
+    "devtools",
+    "debug"
+  ],
+  "license": "MIT",
+  "author": "VaheSaroyan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaheSaroyan/react-native-dev-inspector.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/VaheSaroyan/react-native-dev-inspector/issues"
+  },
+  "homepage": "https://github.com/VaheSaroyan/react-native-dev-inspector#readme",
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-native": ">=0.68.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-native": "^0.72.0",
+    "react": "^18.2.0",
+    "react-native": "^0.73.0"
+  }
+}

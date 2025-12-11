@@ -1,0 +1,51 @@
+{
+  "name": "react-native-dev-inspector",
+  "version": "1.0.0",
+  "description": "git remote add origin git@github.com:VaheSaroyan/react-native-dev-inspector.git",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "clean": "pnpm -r clean",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint packages --ext .ts,.tsx",
+    "prepare": "pnpm build",
+    "version:patch": "pnpm -r exec npm version patch --no-git-tag-version",
+    "version:minor": "pnpm -r exec npm version minor --no-git-tag-version",
+    "version:major": "pnpm -r exec npm version major --no-git-tag-version",
+    "publish:dry": "pnpm build && pnpm -r publish --dry-run --no-git-checks",
+    "publish:npm": "pnpm build && pnpm -r publish --access public --no-git-checks"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaheSaroyan/react-native-dev-inspector.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VaheSaroyan/react-native-dev-inspector/issues"
+  },
+  "homepage": "https://github.com/VaheSaroyan/react-native-dev-inspector#readme",
+  "keywords": [
+    "react-native",
+    "inspector",
+    "devtools",
+    "debug",
+    "expo",
+    "metro"
+  ],
+  "author": "VaheSaroyan",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-native": "^0.72.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@8.10.0"
+}

@@ -1,0 +1,38 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="50%" stop-color="#764ba2"/>
+      <stop offset="100%" stop-color="#f093fb"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle with gradient -->
+  <circle cx="100" cy="100" r="95" fill="url(#logoGradient)"/>
+
+  <!-- React atom structure -->
+  <g transform="translate(100, 100)">
+    <!-- Center dot -->
+    <circle cx="0" cy="0" r="12" fill="#61DAFB"/>
+
+    <!-- Electron orbits -->
+    <ellipse cx="0" cy="0" rx="55" ry="22" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="3"/>
+    <ellipse cx="0" cy="0" rx="55" ry="22" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="3" transform="rotate(60)"/>
+    <ellipse cx="0" cy="0" rx="55" ry="22" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="3" transform="rotate(120)"/>
+  </g>
+
+  <!-- Inspector crosshair/target -->
+  <circle cx="100" cy="100" r="30" fill="none" stroke="white" stroke-width="4" stroke-dasharray="8 8"/>
+
+  <!-- Corner brackets for "inspector" effect -->
+  <g stroke="white" stroke-width="5" stroke-linecap="round">
+    <!-- Top-left bracket -->
+    <path d="M 30 55 L 30 30 L 55 30"/>
+    <!-- Top-right bracket -->
+    <path d="M 145 30 L 170 30 L 170 55"/>
+    <!-- Bottom-left bracket -->
+    <path d="M 30 145 L 30 170 L 55 170"/>
+    <!-- Bottom-right bracket -->
+    <path d="M 145 170 L 170 170 L 170 145"/>
+  </g>
+</svg>

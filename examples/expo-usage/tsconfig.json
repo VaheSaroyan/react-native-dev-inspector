@@ -1,0 +1,24 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "react-native-dev-inspector": [
+        "../../packages/react-native-dev-inspector/src"
+      ],
+      "@rn-dev-inspector/core": [
+        "../../packages/core/src"
+      ],
+      "@rn-dev-inspector/babel-plugin": [
+        "../../packages/babel-plugin/src"
+      ],
+      "@rn-dev-inspector/metro-plugin": [
+        "../../packages/metro-plugin/src"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
+}

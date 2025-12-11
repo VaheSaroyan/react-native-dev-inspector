@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Expo Inspector Example",
+    "slug": "expo-inspector-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "expo-inspector-example",
+    "splash": {
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vsar.expo-inspector-example"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-router"
+    ]
+  }
+}
