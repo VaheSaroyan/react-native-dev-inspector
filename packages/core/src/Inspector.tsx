@@ -90,6 +90,24 @@ const SKIP_COMPONENT_NAMES = new Set([
   'RCTStatusBarManager',
   'InspectorPanel',
   'ElementBox',
+  // Expo Router internals
+  'ContextNavigator',
+  'ContextNavigationContainer',
+  'ExpoRoot',
+  'RootErrorBoundary',
+  'Try',
+  'Freeze',
+  'DelayedFreeze',
+  'RouterRoot',
+  'RootLayoutNav',
+  'Navigator',
+  'Route',
+  'EmptyRoute',
+  'QualifiedSlot',
+  'Slot',
+  'RootLayout',
+  'Layout',
+  'ErrorBoundary',
 ]);
 
 export interface InspectorProps {
