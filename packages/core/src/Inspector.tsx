@@ -90,6 +90,20 @@ const SKIP_COMPONENT_NAMES = new Set([
   'RCTStatusBarManager',
   'InspectorPanel',
   'ElementBox',
+  // React internals
+  'ForwardRef',
+  'React.ForwardRef',
+  'Memo',
+  'React.Memo',
+  'Consumer',
+  'Provider',
+  'Context',
+  'Suspense',
+  'Fragment',
+  'Profiler',
+  'StrictMode',
+  'Anonymous',
+  'Unknown',
   // Expo Router internals
   'ContextNavigator',
   'ContextNavigationContainer',
@@ -162,6 +176,8 @@ interface HierarchyItem {
   fiber: Fiber | null;
   style: StyleInfo | null;
   boxModel: BoxModelInfo | null;
+  frame: { x: number; y: number; width: number; height: number } | null;
+  measure: ((callback: (x: number, y: number, width: number, height: number, left: number, top: number) => void) => void) | null;
 }
 
 interface SelectedElement {
@@ -370,12 +386,24 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
     parsed?: CodeInfo | null;
     callerSource?: string;
     data: any;
+    measure: ((callback: (x: number, y: number, width: number, height: number, left: number, top: number) => void) => void) | null;
   }> = [];
 
   if (viewData.hierarchy) {
     for (let i = 0; i < viewData.hierarchy.length; i++) {
       const item = viewData.hierarchy[i];
       const name = item.name || 'Unknown';
+
+      // Skip internal components
+      if (SKIP_COMPONENT_NAMES.has(name) ||
+          name.startsWith('RCT') ||
+          name.startsWith('Route(') ||
+          name.startsWith('Animated(') ||
+          name.startsWith('Context.') ||
+          name.startsWith('_')) {
+        continue;
+      }
+
       try {
         const data = item.getInspectorData(findNodeHandle);
         const testID = data.props?.testID;
@@ -438,9 +466,10 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
           parsed,
           callerSource,
           data,
+          measure: data.measure || null,
         });
       } catch {
-        hierarchyData.push({ name, data: null });
+        hierarchyData.push({ name, data: null, measure: null });
       }
     }
   }
@@ -543,7 +572,7 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
         if (!seenComponents.has(key)) {
           seenComponents.add(key);
           const { style, boxModel } = extractStyleInfo(data?.props);
-          items.push({ name, codeInfo: callSiteInfo, fiber: data?.fiber || null, style, boxModel });
+          items.push({ name, codeInfo: callSiteInfo, fiber: data?.fiber || null, style, boxModel, frame: null, measure: item.measure });
         }
         continue;
       }
@@ -577,6 +606,8 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
               fiber: null,
               style: null,
               boxModel: null,
+              frame: null,
+              measure: item.measure,
             });
           }
         }
@@ -587,7 +618,7 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
       if (!seenComponents.has(key)) {
         seenComponents.add(key);
         const { style, boxModel } = extractStyleInfo(data?.props);
-        items.push({ name, codeInfo: parsed, fiber: data?.fiber || null, style, boxModel });
+        items.push({ name, codeInfo: parsed, fiber: data?.fiber || null, style, boxModel, frame: null, measure: item.measure });
       }
     }
   }
@@ -595,10 +626,15 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
   // If still no items, add items without source for display purposes
   if (items.length === 0 && viewData.hierarchy) {
     for (let i = 0; i < Math.min(viewData.hierarchy.length, 5); i++) {
-      const item = viewData.hierarchy[i];
-      const name = item.name || 'Unknown';
+      const hierItem = viewData.hierarchy[i];
+      const name = hierItem.name || 'Unknown';
       if (!name.startsWith('RCT')) {
-        items.push({ name, codeInfo: null, fiber: null, style: null, boxModel: null });
+        let measure = null;
+        try {
+          const data = hierItem.getInspectorData(findNodeHandle);
+          measure = data.measure || null;
+        } catch {}
+        items.push({ name, codeInfo: null, fiber: null, style: null, boxModel: null, frame: null, measure });
       }
     }
   }
@@ -994,7 +1030,26 @@ export const Inspector: React.FC<InspectorProps> = ({
   }, [selectedElement, onElementTapped, openEditor]);
 
   const handleSelectIndex = useCallback((index: number) => {
+    // First update the selected index
     setSelectedElement(prev => ({ ...prev, selectedIndex: index }));
+
+    // Then measure the element and update the frame
+    setSelectedElement(prev => {
+      const selectedItem = prev.hierarchy[index];
+      if (selectedItem?.measure) {
+        try {
+          selectedItem.measure((x, y, width, height, pageX, pageY) => {
+            setSelectedElement(current => ({
+              ...current,
+              frame: { x: pageX, y: pageY, width, height },
+            }));
+          });
+        } catch {
+          // measure might fail, ignore
+        }
+      }
+      return prev;
+    });
   }, []);
 
   const contextValue: InspectorContextValue = {

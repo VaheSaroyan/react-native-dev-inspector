@@ -1,6 +1,6 @@
 {
   "name": "@rn-dev-inspector/expo-plugin",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "description": "Expo config plugin for React Native Dev Inspector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
