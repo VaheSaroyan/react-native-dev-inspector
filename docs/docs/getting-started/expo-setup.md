@@ -4,122 +4,94 @@ sidebar_position: 2
 
 # Expo Setup
 
-Setting up React Native Dev Inspector with Expo is straightforward using our config plugin.
+Setting up React Native Dev Inspector with Expo is simple - just one package, two config steps.
 
-## Step 1: Install Packages
+## Step 1: Install
 
 ```bash
-npx expo install react-native-dev-inspector @rn-dev-inspector/expo-plugin
+npx expo install react-native-dev-inspector
 ```
 
-## Step 2: Add Config Plugin
+## Step 2: Configure Metro
 
-Add the plugin to your `app.json` or `app.config.js`:
+Create or update your `metro.config.js`:
 
-```json title="app.json"
-{
-  "expo": {
-    "plugins": [
-      "@rn-dev-inspector/expo-plugin"
-    ]
-  }
-}
-```
+```js title="metro.config.js"
+const { getDefaultConfig } = require('expo/metro-config');
+const { withInspector } = require('react-native-dev-inspector/metro');
 
-Or with options:
+const config = getDefaultConfig(__dirname);
 
-```json title="app.json"
-{
-  "expo": {
-    "plugins": [
-      ["@rn-dev-inspector/expo-plugin", {
-        "editor": "code"
-      }]
-    ]
-  }
-}
+module.exports = withInspector(config, {
+  editor: 'code', // optional - auto-detects if not specified
+});
 ```
 
 ## Step 3: Wrap Your App
 
-```tsx title="App.tsx"
+```tsx title="App.tsx or app/_layout.tsx"
 import { Inspector, InspectorDevMenu } from 'react-native-dev-inspector';
 
 export default function App() {
   return (
     <Inspector>
       <YourApp />
-      <InspectorDevMenu />
+      <InspectorDevMenu position="bottom-right" />
     </Inspector>
   );
 }
 ```
 
-## Step 4: Rebuild
+### For Expo Router
 
-Since this modifies native configuration, rebuild your app:
+```tsx title="app/_layout.tsx"
+import { Stack } from 'expo-router';
+import { Inspector, InspectorDevMenu } from 'react-native-dev-inspector';
 
-```bash
-npx expo prebuild --clean
-npx expo run:ios
-# or
-npx expo run:android
+export default function RootLayout() {
+  return (
+    <Inspector>
+      <Stack />
+      <InspectorDevMenu position="bottom-right" />
+    </Inspector>
+  );
+}
 ```
 
-## Plugin Options
+## Step 4: Start Your App
+
+```bash
+npx expo start --clear
+```
+
+**That's it!** Shake your device or press `Cmd+D` (iOS) / `Cmd+M` (Android) to access the dev menu, or tap the floating button.
+
+## Metro Plugin Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `editor` | `string` | `'code'` | Editor command to use |
-| `configureBabel` | `boolean` | `true` | Auto-configure babel plugin |
-| `excludes` | `string[]` | `[]` | File patterns to exclude |
+| `editor` | `string` | auto-detect | Editor command (code, cursor, webstorm, etc.) |
+| `cwd` | `string` | `process.cwd()` | Working directory for resolving paths |
+| `onError` | `function` | - | Callback for launch errors |
 
-## What the Plugin Does
+## Environment Variables
 
-The Expo plugin automatically:
+You can also set the editor via environment variables:
 
-1. **Configures Babel**: Adds `@rn-dev-inspector/babel-plugin` to your `babel.config.js`
-2. **Configures Metro**: Adds the inspector middleware to `metro.config.js`
+```bash
+# Set editor for the session
+export REACT_EDITOR=cursor
+npx expo start
 
-If these files already exist, the plugin will warn you to add the configuration manually.
-
-## Manual Configuration
-
-If you prefer manual setup or the plugin can't modify your existing config:
-
-### babel.config.js
-
-```js title="babel.config.js"
-module.exports = function(api) {
-  api.cache(true);
-  return {
-    presets: ['babel-preset-expo'],
-    plugins: [
-      '@rn-dev-inspector/babel-plugin',
-    ],
-  };
-};
+# Or inline
+REACT_EDITOR=webstorm npx expo start
 ```
 
-### metro.config.js
+## Expo Go vs Development Builds
 
-```js title="metro.config.js"
-const { getDefaultConfig } = require('expo/metro-config');
-const { withInspector } = require('@rn-dev-inspector/metro-plugin');
+The inspector works in both Expo Go and development builds:
 
-const config = getDefaultConfig(__dirname);
+- **Expo Go**: Works, but editor launching uses URL schemes
+- **Development Builds**: Full support with Metro middleware
 
-module.exports = withInspector(config, {
-  editor: 'code',
-});
-```
-
-## Expo Go Limitations
-
-The inspector works best with development builds (`expo run:ios` / `expo run:android`). In Expo Go:
-
-- The babel plugin works
-- Metro middleware won't be available
-- Editor launching falls back to URL schemes
-
-For the best experience, use development builds.
+For the best experience, use development builds (`npx expo run:ios` / `npx expo run:android`).

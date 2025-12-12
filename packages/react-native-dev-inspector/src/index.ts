@@ -5,6 +5,7 @@
  *
  * @example
  * ```tsx
+ * // App.tsx
  * import { Inspector, InspectorDevMenu } from 'react-native-dev-inspector';
  *
  * export default function App() {
@@ -15,6 +16,14 @@
  *     </Inspector>
  *   );
  * }
+ * ```
+ *
+ * @example
+ * ```js
+ * // metro.config.js
+ * const { withInspector } = require('react-native-dev-inspector/metro');
+ *
+ * module.exports = withInspector(config, { editor: 'code' });
  * ```
  *
  * @packageDocumentation

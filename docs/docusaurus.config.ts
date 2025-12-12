@@ -100,8 +100,8 @@ const config: Config = {
               href: 'https://www.npmjs.com/package/@rn-dev-inspector/core',
             },
             {
-              label: '@rn-dev-inspector/babel-plugin',
-              href: 'https://www.npmjs.com/package/@rn-dev-inspector/babel-plugin',
+              label: '@rn-dev-inspector/metro-plugin',
+              href: 'https://www.npmjs.com/package/@rn-dev-inspector/metro-plugin',
             },
           ],
         },

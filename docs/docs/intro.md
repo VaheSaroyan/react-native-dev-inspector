@@ -16,53 +16,64 @@ React Native Dev Inspector is a developer tool that allows you to tap on any com
 - **Box Model Visualization**: See margin, padding, and dimensions like browser DevTools
 - **Style Inspector**: View computed styles of selected components
 - **New Architecture Support**: Works with both old and new React Native architecture (RN 0.68+, 0.73+, 0.82+)
-- **Expo Compatible**: First-class Expo support with config plugin
+- **Expo Compatible**: Works with Expo and bare React Native projects
 - **Dev Menu Integration**: Toggle inspector from React Native dev menu (shake or Cmd+D/Cmd+M)
 - **Zero Runtime Overhead**: Only active in `__DEV__` mode
+- **Zero Babel Config**: No babel plugin required!
 
 ## Quick Start
 
-### For Expo Projects
+### Installation
 
 ```bash
-npx expo install react-native-dev-inspector @rn-dev-inspector/expo-plugin
+npm install react-native-dev-inspector
 ```
 
-Add to your `app.json`:
+### 1. Configure Metro
 
-```json
-{
-  "expo": {
-    "plugins": ["@rn-dev-inspector/expo-plugin"]
-  }
+```js
+// metro.config.js
+const { getDefaultConfig } = require('expo/metro-config');
+// or: const { getDefaultConfig } = require('@react-native/metro-config');
+
+const { withInspector } = require('react-native-dev-inspector/metro');
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = withInspector(config, {
+  editor: 'code', // 'code' | 'cursor' | 'webstorm' | etc.
+});
+```
+
+### 2. Wrap Your App
+
+```tsx
+import { Inspector, InspectorDevMenu } from 'react-native-dev-inspector';
+
+export default function App() {
+  return (
+    <Inspector>
+      <YourApp />
+      <InspectorDevMenu />
+    </Inspector>
+  );
 }
 ```
 
-### For Bare React Native
-
-```bash
-npm install react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
-```
-
-See the [Getting Started](/docs/getting-started/installation) guide for detailed setup instructions.
+**That's it!** See the [Getting Started](/docs/getting-started/installation) guide for more details.
 
 ## How It Works
 
-1. **Babel Plugin**: Injects source location metadata into JSX elements during development:
-   - `testID="ComponentName@file:line:column"` for native components (View, Text, etc.)
-   - `__callerSource` prop for user components to track WHERE they are used (call site)
-   - `dataInspectorSource` as a backup attribute
-
-2. **Inspector Component**: Captures touch events and uses React Native's internal `getInspectorDataForViewAtPoint` API to:
+1. **Inspector Component**: Captures touch events and uses React Native's internal `getInspectorDataForViewAtPoint` API to:
    - Traverse the React fiber tree and build component hierarchy
-   - Parse `testID` and `__callerSource` to extract source locations
+   - Extract source locations from `_debugSource`
    - Display the inspector panel with styles and box model
 
-3. **Metro Plugin**: Provides endpoints for opening files in your editor:
+2. **Metro Plugin**: Provides endpoints for opening files in your editor:
    - `/__inspect-open-in-editor?file=...&line=...` (primary)
    - Uses `launch-editor` for cross-platform editor detection
 
-4. **Editor Integration**: Supports VS Code, Cursor, WebStorm, Sublime, and more via URL schemes or command-line
+3. **Editor Integration**: Supports VS Code, Cursor, WebStorm, Sublime, and more via URL schemes or command-line
 
 ## Supported Editors
 
@@ -78,19 +89,6 @@ See the [Getting Started](/docs/getting-started/installation) guide for detailed
 - Xcode
 
 ## Demo
-
-```tsx
-import { Inspector, InspectorDevMenu } from 'react-native-dev-inspector';
-
-export default function App() {
-  return (
-    <Inspector>
-      <YourApp />
-      <InspectorDevMenu />
-    </Inspector>
-  );
-}
-```
 
 When the inspector is enabled:
 1. A "Tap to inspect" hint appears

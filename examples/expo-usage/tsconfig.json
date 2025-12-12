@@ -6,11 +6,11 @@
       "react-native-dev-inspector": [
         "../../packages/react-native-dev-inspector/src"
       ],
+      "react-native-dev-inspector/metro": [
+        "../../packages/react-native-dev-inspector/src/metro"
+      ],
       "@rn-dev-inspector/core": [
         "../../packages/core/src"
-      ],
-      "@rn-dev-inspector/babel-plugin": [
-        "../../packages/babel-plugin/src"
       ],
       "@rn-dev-inspector/metro-plugin": [
         "../../packages/metro-plugin/src"

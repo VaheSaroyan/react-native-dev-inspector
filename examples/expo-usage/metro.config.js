@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require('expo/metro-config');
-const { withInspector } = require('@rn-dev-inspector/metro-plugin');
+// In your app, use: require('react-native-dev-inspector/metro')
+const { withInspector } = require('react-native-dev-inspector/metro');
 const path = require('path');
 
 const projectRoot = __dirname;

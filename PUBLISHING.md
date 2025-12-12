@@ -6,11 +6,11 @@ Quick reference for publishing `react-native-dev-inspector` packages to npm.
 
 | Package | npm Name |
 |---------|----------|
-| Core | `@rn-dev-inspector/core` |
 | Main | `react-native-dev-inspector` |
-| Babel Plugin | `@rn-dev-inspector/babel-plugin` |
+| Core | `@rn-dev-inspector/core` |
 | Metro Plugin | `@rn-dev-inspector/metro-plugin` |
-| Expo Plugin | `@rn-dev-inspector/expo-plugin` |
+
+> Note: The main `react-native-dev-inspector` package re-exports core and includes metro-plugin, so users only need to install one package.
 
 ## Pre-requisites
 
@@ -92,6 +92,7 @@ If a version already exists on npm, bump the version and try again.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2024-12 | Simplified installation - single package, no babel plugin required |
 | 1.0.2 | 2024-12 | Enhanced InspectorDevMenu (compact, showOnlyWhenInactive), InspectorButton render function, improved source location tracking |
 | 1.0.1 | 2024-12 | Initial public release |
 | 1.0.0 | 2024-12 | First commit |

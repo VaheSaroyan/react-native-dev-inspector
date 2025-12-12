@@ -9,9 +9,6 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@rn-dev-inspector/babel-plugin": "file:../../packages/babel-plugin",
-    "@rn-dev-inspector/core": "file:../../packages/core",
-    "@rn-dev-inspector/metro-plugin": "file:../../packages/metro-plugin",
     "expo": "~52.0.0",
     "expo-asset": "~11.0.5",
     "expo-constants": "~17.0.8",

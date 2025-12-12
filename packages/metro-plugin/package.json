@@ -1,6 +1,6 @@
 {
   "name": "@rn-dev-inspector/metro-plugin",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Metro plugin for React Native Dev Inspector - enables opening source files in editor",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

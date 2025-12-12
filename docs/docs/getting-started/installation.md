@@ -4,62 +4,98 @@ sidebar_position: 1
 
 # Installation
 
-React Native Dev Inspector consists of several packages that work together:
+React Native Dev Inspector is a single package that includes everything you need.
 
-| Package | Description |
-|---------|-------------|
-| `react-native-dev-inspector` | Main package - re-exports everything from core |
-| `@rn-dev-inspector/core` | Core Inspector component and utilities |
-| `@rn-dev-inspector/babel-plugin` | Injects source location into JSX |
-| `@rn-dev-inspector/metro-plugin` | Server middleware for launching editor |
-| `@rn-dev-inspector/expo-plugin` | Expo config plugin for automatic setup |
-
-## Choose Your Setup
+## Install
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 <Tabs>
-  <TabItem value="expo" label="Expo" default>
+  <TabItem value="npm" label="npm" default>
 
 ```bash
-npx expo install react-native-dev-inspector @rn-dev-inspector/expo-plugin
+npm install react-native-dev-inspector
 ```
 
-Then follow the [Expo Setup](/docs/getting-started/expo-setup) guide.
-
   </TabItem>
-  <TabItem value="bare" label="Bare React Native">
+  <TabItem value="yarn" label="yarn">
 
 ```bash
-npm install react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
-```
-
-Then follow the [Bare React Native](/docs/getting-started/bare-react-native) guide.
-
-  </TabItem>
-  <TabItem value="yarn" label="Yarn">
-
-```bash
-yarn add react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
+yarn add react-native-dev-inspector
 ```
 
   </TabItem>
   <TabItem value="pnpm" label="pnpm">
 
 ```bash
-pnpm add react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
+pnpm add react-native-dev-inspector
+```
+
+  </TabItem>
+  <TabItem value="expo" label="Expo">
+
+```bash
+npx expo install react-native-dev-inspector
 ```
 
   </TabItem>
 </Tabs>
 
+**That's it!** Just one package. No babel plugin required.
+
+## Setup
+
+### 1. Configure Metro
+
+Add the inspector middleware to your `metro.config.js`:
+
+```js
+// metro.config.js
+const { getDefaultConfig } = require('expo/metro-config');
+// or: const { getDefaultConfig } = require('@react-native/metro-config');
+
+const { withInspector } = require('react-native-dev-inspector/metro');
+
+const config = getDefaultConfig(__dirname);
+
+module.exports = withInspector(config, {
+  editor: 'code', // optional - auto-detects if not specified
+});
+```
+
+### 2. Wrap Your App
+
+```tsx
+// App.tsx or _layout.tsx (Expo Router)
+import { Inspector, InspectorDevMenu } from 'react-native-dev-inspector';
+
+export default function App() {
+  return (
+    <Inspector>
+      <YourApp />
+      {/* Optional: floating button to toggle inspector */}
+      <InspectorDevMenu position="bottom-right" />
+    </Inspector>
+  );
+}
+```
+
+**Done!** Start your app and shake to access the dev menu, or tap the floating button.
+
 ## Requirements
 
-- React Native 0.70+
-- React 18+
+- React Native 0.68+
+- React 17+
 - Node.js 18+
+- Metro bundler
 
 ## TypeScript Support
 
-All packages include TypeScript type definitions out of the box. No additional `@types/*` packages needed.
+TypeScript type definitions are included out of the box. No additional `@types/*` packages needed.
+
+## Next Steps
+
+- [Configure your editor](/docs/configuration/editor-setup)
+- [Customize the inspector](/docs/api/inspector)
+- [Troubleshooting](/docs/troubleshooting/common-issues)

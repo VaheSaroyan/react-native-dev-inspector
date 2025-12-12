@@ -4,55 +4,21 @@ sidebar_position: 3
 
 # Bare React Native Setup
 
-For bare React Native projects (without Expo), you'll need to configure the babel and metro plugins manually.
+For bare React Native projects (without Expo), setup is just as simple.
 
-## Step 1: Install Packages
+## Step 1: Install
 
 ```bash
-npm install react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
+npm install react-native-dev-inspector
 ```
 
-## Step 2: Configure Babel
-
-Add the babel plugin to your `babel.config.js`:
-
-```js title="babel.config.js"
-module.exports = {
-  presets: ['module:@react-native/babel-preset'],
-  plugins: [
-    // Add this plugin
-    '@rn-dev-inspector/babel-plugin',
-  ],
-};
-```
-
-### Babel Plugin Options
-
-```js title="babel.config.js"
-module.exports = {
-  presets: ['module:@react-native/babel-preset'],
-  plugins: [
-    ['@rn-dev-inspector/babel-plugin', {
-      // Custom working directory (default: process.cwd())
-      cwd: '/path/to/project',
-
-      // Patterns to exclude (default: node_modules, .expo, .next)
-      excludes: [/node_modules/, /\.generated\./],
-
-      // Custom attribute prefix (default: 'data-inspector')
-      attributePrefix: 'data-inspector',
-    }],
-  ],
-};
-```
-
-## Step 3: Configure Metro
+## Step 2: Configure Metro
 
 Update your `metro.config.js` to include the inspector middleware:
 
 ```js title="metro.config.js"
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
-const { withInspector } = require('@rn-dev-inspector/metro-plugin');
+const { withInspector } = require('react-native-dev-inspector/metro');
 
 const defaultConfig = getDefaultConfig(__dirname);
 
@@ -63,20 +29,12 @@ const config = {
 module.exports = withInspector(
   mergeConfig(defaultConfig, config),
   {
-    editor: 'code', // or 'cursor', 'webstorm', etc.
+    editor: 'code', // optional - auto-detects if not specified
   }
 );
 ```
 
-### Metro Plugin Options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `editor` | `string` | Editor command (auto-detected if not set) |
-| `cwd` | `string` | Working directory for resolving paths |
-| `onError` | `function` | Callback for launch errors |
-
-## Step 4: Wrap Your App
+## Step 3: Wrap Your App
 
 ```tsx title="App.tsx"
 import React from 'react';
@@ -87,25 +45,28 @@ export default function App() {
   return (
     <Inspector>
       <YourApp />
-      <InspectorDevMenu />
+      <InspectorDevMenu position="bottom-right" />
     </Inspector>
   );
 }
 ```
 
-## Step 5: Clear Cache and Rebuild
+## Step 4: Clear Cache and Start
 
 ```bash
-# Clear Metro cache
+# Clear Metro cache and start
 npx react-native start --reset-cache
-
-# Rebuild iOS
-cd ios && pod install && cd ..
-npx react-native run-ios
-
-# Rebuild Android
-npx react-native run-android
 ```
+
+**That's it!** Shake your device or press `Cmd+D` (iOS) / `Cmd+M` (Android) to access the dev menu.
+
+## Metro Plugin Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `editor` | `string` | auto-detect | Editor command (code, cursor, webstorm, etc.) |
+| `cwd` | `string` | `process.cwd()` | Working directory for resolving paths |
+| `onError` | `function` | - | Callback for launch errors |
 
 ## New Architecture (Fabric)
 

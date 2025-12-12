@@ -305,8 +305,8 @@ const features = [
     },
     {
         icon: '📦',
-        title: 'Zero Production Overhead',
-        description: 'Babel plugin only adds metadata in development. No impact on production builds.',
+        title: 'Zero Config',
+        description: 'No babel plugin required. Just one package, two config steps.',
     },
     {
         icon: '🔧',
@@ -413,38 +413,28 @@ function PipelineSection() {
                     How It Works
                 </Heading>
                 <p className={styles.sectionSubtitle}>
-                    Three-step process from tap to editor
+                    Two-step process from tap to editor
                 </p>
                 <div className={styles.pipelineSteps}>
                     <div className={styles.pipelineStep}>
                         <div className={styles.stepNumber}>1</div>
                         <Heading as="h3" className={styles.stepTitle}>
-                            Build Time
-                        </Heading>
-                        <p className={styles.stepDescription}>
-                            Babel plugin injects source location metadata into JSX elements during compilation
-                        </p>
-                        <div className={styles.stepCode}>@rn-dev-inspector/babel-plugin</div>
-                    </div>
-                    <div className={styles.pipelineStep}>
-                        <div className={styles.stepNumber}>2</div>
-                        <Heading as="h3" className={styles.stepTitle}>
                             Runtime
                         </Heading>
                         <p className={styles.stepDescription}>
-                            Inspector component captures taps and extracts source info from the React fiber tree
+                            Inspector component captures taps and extracts source info from React's debug metadata
                         </p>
                         <div className={styles.stepCode}>{"<Inspector>"}</div>
                     </div>
                     <div className={styles.pipelineStep}>
-                        <div className={styles.stepNumber}>3</div>
+                        <div className={styles.stepNumber}>2</div>
                         <Heading as="h3" className={styles.stepTitle}>
                             Dev Server
                         </Heading>
                         <p className={styles.stepDescription}>
                             Metro middleware receives the request and launches your editor at the correct file:line
                         </p>
-                        <div className={styles.stepCode}>@rn-dev-inspector/metro-plugin</div>
+                        <div className={styles.stepCode}>react-native-dev-inspector/metro</div>
                     </div>
                 </div>
             </div>
@@ -461,23 +451,24 @@ function QuickStartSection() {
                     Quick Start
                 </Heading>
                 <p className={styles.sectionSubtitle}>
-                    Get up and running in minutes
+                    Get up and running in minutes - just one package!
                 </p>
                 <div className={styles.quickStartGrid}>
                     <div className={styles.quickStartCard}>
                         <Heading as="h3" className={styles.quickStartTitle}>
-                            <ExpoIcon/> Expo
+                            Install
                         </Heading>
                         <pre className={styles.codeBlock}>
-              <code>npx expo install react-native-dev-inspector @rn-dev-inspector/expo-plugin</code>
+              <code>npm install react-native-dev-inspector</code>
             </pre>
                     </div>
                     <div className={styles.quickStartCard}>
                         <Heading as="h3" className={styles.quickStartTitle}>
-                            <ReactNativeIcon/> React Native CLI
+                            Configure Metro
                         </Heading>
                         <pre className={styles.codeBlock}>
-              <code>npm install react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin</code>
+              <code>{`const { withInspector } = require('react-native-dev-inspector/metro');
+module.exports = withInspector(config);`}</code>
             </pre>
                     </div>
                 </div>

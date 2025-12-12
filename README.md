@@ -17,54 +17,24 @@ Inspired by [react-dev-inspector](https://github.com/zthxxx/react-dev-inspector)
 - **Customizable** - Support for VS Code, Cursor, WebStorm, Sublime, and more
 - **Expo & CLI Support** - Works with both Expo and React Native CLI projects
 - **New Architecture Support** - Works with RN 0.68+, 0.73+, 0.82+ (Fabric)
+- **Zero Babel Config** - No babel plugin required!
 
 ## Installation
 
 ```bash
-# npm
-npm install react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
-
-# yarn
-yarn add react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
-
-# pnpm
-pnpm add react-native-dev-inspector @rn-dev-inspector/babel-plugin @rn-dev-inspector/metro-plugin
+npm install react-native-dev-inspector
 ```
 
-### For Expo Projects
+## Quick Setup (2 steps)
 
-```bash
-npx expo install react-native-dev-inspector @rn-dev-inspector/expo-plugin
-```
-
-## Setup
-
-### 1. Configure Babel
-
-Add the babel plugin to your `babel.config.js`:
+### 1. Configure Metro
 
 ```js
-module.exports = function(api) {
-  api.cache(true);
-  return {
-    presets: ['babel-preset-expo'], // or 'module:metro-react-native-babel-preset'
-    plugins: [
-      '@rn-dev-inspector/babel-plugin',
-      // ... other plugins
-    ],
-  };
-};
-```
-
-### 2. Configure Metro
-
-Add the Metro middleware to your `metro.config.js`:
-
-```js
+// metro.config.js
 const { getDefaultConfig } = require('expo/metro-config');
 // or: const { getDefaultConfig } = require('@react-native/metro-config');
 
-const { withInspector } = require('@rn-dev-inspector/metro-plugin');
+const { withInspector } = require('react-native-dev-inspector/metro');
 
 const config = getDefaultConfig(__dirname);
 
@@ -73,9 +43,10 @@ module.exports = withInspector(config, {
 });
 ```
 
-### 3. Wrap Your App
+### 2. Wrap Your App
 
 ```tsx
+// App.tsx or _layout.tsx (Expo Router)
 import { Inspector, InspectorDevMenu } from 'react-native-dev-inspector';
 
 export default function App() {
@@ -83,27 +54,13 @@ export default function App() {
     <Inspector>
       <YourApp />
       {/* Optional: floating button to toggle inspector */}
-      <InspectorDevMenu />
+      <InspectorDevMenu position="bottom-right" />
     </Inspector>
   );
 }
 ```
 
-### For Expo (Alternative Setup)
-
-Add the Expo config plugin to your `app.json`:
-
-```json
-{
-  "expo": {
-    "plugins": [
-      ["@rn-dev-inspector/expo-plugin", {
-        "editor": "code"
-      }]
-    ]
-  }
-}
-```
+**That's it!** No babel plugin required.
 
 ## Usage
 
@@ -211,22 +168,22 @@ const {
 
 ## Supported Editors
 
-| Editor | Command | URL Scheme |
-|--------|---------|------------|
-| VS Code | `code` | `vscode://` |
-| VS Code Insiders | `code-insiders` | `vscode-insiders://` |
-| Cursor | `cursor` | `cursor://` |
-| WebStorm | `webstorm` | `jetbrains://webstorm/` |
-| IntelliJ IDEA | `idea` | `jetbrains://idea/` |
-| PhpStorm | `phpstorm` | `jetbrains://phpstorm/` |
-| Sublime Text | `subl` | `subl://` |
-| Atom | `atom` | `atom://` |
-| Vim | `vim` | - |
-| Neovim | `nvim` | - |
-| Emacs | `emacs` | - |
-| Zed | `zed` | `zed://` |
-| Android Studio | `studio` | - |
-| Xcode | `xed` | - |
+| Editor | Command |
+|--------|---------|
+| VS Code | `code` |
+| VS Code Insiders | `code-insiders` |
+| Cursor | `cursor` |
+| WebStorm | `webstorm` |
+| IntelliJ IDEA | `idea` |
+| PhpStorm | `phpstorm` |
+| Sublime Text | `subl` |
+| Atom | `atom` |
+| Vim | `vim` |
+| Neovim | `nvim` |
+| Emacs | `emacs` |
+| Zed | `zed` |
+| Android Studio | `studio` |
+| Xcode | `xed` |
 
 Set the editor via:
 - Metro plugin option: `withInspector(config, { editor: 'cursor' })`
@@ -234,22 +191,16 @@ Set the editor via:
 
 ## How It Works
 
-The inspector works in three stages:
+The inspector works without any build-time transformations:
 
-1. **Build Time (Babel Plugin)**: Injects source location metadata into JSX elements:
-   - `testID="ComponentName@file:line:column"` - for native components (View, Text, etc.)
-   - `__callerSource` prop - for user components to track WHERE they are used (call site), not where they are defined
-   - `dataInspectorSource` - backup attribute with source info
-
-2. **Runtime (Inspector Component)**: Uses React Native's internal `getInspectorDataForViewAtPoint` API to:
+1. **Runtime (Inspector Component)**: Uses React Native's internal `getInspectorDataForViewAtPoint` API to:
    - Capture touch events and find the tapped element
    - Traverse the React fiber tree to build the component hierarchy
-   - Parse `testID` and `__callerSource` to extract source locations
+   - Extract source locations from React's debug info (`_debugSource`)
    - Display the inspector panel with hierarchy, styles, and box model
 
-3. **Dev Server (Metro Middleware)**: Provides endpoints for opening files:
-   - `/__inspect-open-in-editor?file=...&line=...` (GET, react-dev-inspector compatible)
-   - `/__open-stack-frame-in-editor` (GET, legacy Metro support)
+2. **Dev Server (Metro Plugin)**: Provides an endpoint for opening files:
+   - `/__inspect-open-in-editor?file=...&line=...&column=...`
    - Uses `launch-editor` for cross-platform editor detection and launching
 
 ## Architecture
@@ -261,9 +212,9 @@ The inspector works in three stages:
 |  |                      <Inspector>                            |  |
 |  |  +------------------------------------------------------+  |  |
 |  |  |                  Your Components                      |  |  |
-|  |  |  <CustomButton __callerSource="...@App.tsx:25:5" />  |  |  |
-|  |  |    <View testID="View@CustomButton.tsx:10:3">        |  |  |
-|  |  |      <Text testID="Text@CustomButton.tsx:11:5" />    |  |  |
+|  |  |  <CustomButton />                                    |  |  |
+|  |  |    <View>                                            |  |  |
+|  |  |      <Text>Click me</Text>                           |  |  |
 |  |  +------------------------------------------------------+  |  |
 |  |  +------------------------------------------------------+  |  |
 |  |  |  Inspector Panel: hierarchy | styles | box model      |  |  |
@@ -276,10 +227,8 @@ The inspector works in three stages:
 +------------------------------------------------------------------+
 |                       Metro Dev Server                            |
 |  +------------------------------------------------------------+  |
-|  |              @rn-dev-inspector/metro-plugin                 |  |
-|  |  Endpoints:                                                 |  |
-|  |  - /__inspect-open-in-editor (GET)                         |  |
-|  |  - /__open-stack-frame-in-editor (GET, legacy)             |  |
+|  |    react-native-dev-inspector/metro (withInspector)        |  |
+|  |  Endpoint: /__inspect-open-in-editor                        |  |
 |  +------------------------------------------------------------+  |
 +------------------------------------------------------------------+
                               |
@@ -291,16 +240,6 @@ The inspector works in three stages:
 +------------------------------------------------------------------+
 ```
 
-## Packages
-
-| Package | Description |
-|---------|-------------|
-| `react-native-dev-inspector` | Main package with Inspector component |
-| `@rn-dev-inspector/core` | Core inspector functionality |
-| `@rn-dev-inspector/babel-plugin` | Babel plugin for source injection |
-| `@rn-dev-inspector/metro-plugin` | Metro middleware for editor launching |
-| `@rn-dev-inspector/expo-plugin` | Expo config plugin |
-
 ## Troubleshooting
 
 ### Editor doesn't open
@@ -309,11 +248,11 @@ The inspector works in three stages:
 2. Set `REACT_EDITOR` environment variable: `export REACT_EDITOR=code`
 3. Check the Metro console for error messages
 
-### Source location not found
+### Inspector doesn't show source location
 
-1. Make sure the babel plugin is configured correctly
-2. Clear the Metro bundler cache: `npx react-native start --reset-cache`
-3. Rebuild your app
+1. Make sure you're running in development mode (`__DEV__` is true)
+2. Clear the Metro bundler cache: `npx expo start --clear` or `npx react-native start --reset-cache`
+3. Some library components may not have source info available
 
 ### Inspector doesn't show up
 

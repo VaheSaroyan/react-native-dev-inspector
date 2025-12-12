@@ -1,9 +1,19 @@
 {
   "name": "react-native-dev-inspector",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Click on React Native components to jump to source code in your IDE",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./metro": {
+      "types": "./dist/metro.d.ts",
+      "default": "./dist/metro.js"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -37,7 +47,8 @@
     "react-native": ">=0.68.0"
   },
   "dependencies": {
-    "@rn-dev-inspector/core": "workspace:*"
+    "@rn-dev-inspector/core": "workspace:*",
+    "@rn-dev-inspector/metro-plugin": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

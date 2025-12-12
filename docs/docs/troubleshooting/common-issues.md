@@ -29,41 +29,36 @@ Solutions to common problems you might encounter.
    </Inspector>
    ```
 
-3. **Rebuild after adding plugins**
+3. **Clear cache and restart**
    ```bash
-   npx expo prebuild --clean
-   npx expo run:ios
+   npx expo start --clear
+   # or
+   npx react-native start --reset-cache
    ```
 
 ## Source Info Not Found
 
 ### Symptoms
-- Tapping shows "Unknown" or no file path
+- Tapping shows "No source info available"
 - Editor doesn't open
 
 ### Solutions
 
-1. **Verify babel plugin is configured**
-   ```js title="babel.config.js"
-   module.exports = {
-     plugins: ['@rn-dev-inspector/babel-plugin'],
-   };
-   ```
-
-2. **Clear Metro cache**
+1. **Clear Metro cache**
    ```bash
    npx react-native start --reset-cache
    # or
    npx expo start --clear
    ```
 
-3. **Check file exclusions**
+2. **Some library components don't have source info**
 
-   The file might be excluded. Check your babel plugin config:
-   ```js
-   ['@rn-dev-inspector/babel-plugin', {
-     excludes: [/node_modules/],  // Make sure your files aren't excluded
-   }]
+   Third-party library components (from node_modules) typically don't include source location metadata. This is expected behavior.
+
+3. **Verify Metro plugin is configured**
+   ```js title="metro.config.js"
+   const { withInspector } = require('react-native-dev-inspector/metro');
+   module.exports = withInspector(config);
    ```
 
 ## Wrong Component Selected
@@ -78,7 +73,7 @@ Solutions to common problems you might encounter.
 
 2. **Check for Pressable wrappers** - Some components are wrapped in touchable areas that intercept taps
 
-3. **Use the native inspector** - React Native's built-in inspector (`Cmd+D` > "Show Element Inspector") may work better for some cases
+3. **Use the hierarchy breadcrumb** - You can navigate through parent components by tapping items in the breadcrumb
 
 ## Metro Connection Issues
 
@@ -140,11 +135,11 @@ All packages include TypeScript definitions. If you see type errors:
 
 ### Why
 
-Expo Go doesn't include our native modules. The babel plugin works, but Metro middleware isn't available.
+Expo Go has limited support for custom Metro middleware.
 
 ### Solution
 
-Use development builds:
+Use development builds for the best experience:
 ```bash
 npx expo run:ios
 # or
@@ -168,8 +163,8 @@ The inspector supports Fabric, but some methods differ:
 
 2. **Check React Native version**
 
-   Requires React Native 0.70+
+   Requires React Native 0.68+
 
 3. **Report bugs**
 
-   If you encounter Fabric-specific issues, please [open an issue](https://github.com/anthropics/react-native-dev-inspector/issues).
+   If you encounter Fabric-specific issues, please [open an issue](https://github.com/VaheSaroyan/react-native-dev-inspector/issues).

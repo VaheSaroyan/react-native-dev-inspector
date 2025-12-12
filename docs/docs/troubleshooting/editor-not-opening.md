@@ -87,12 +87,13 @@ The inspector uses both. Check Metro logs to see which path is being used.
 
 ### Working Directory
 
-Ensure the `cwd` option matches your project:
+Ensure the `cwd` option in your metro config matches your project:
 
 ```js
-['@rn-dev-inspector/babel-plugin', {
+// metro.config.js
+module.exports = withInspector(config, {
   cwd: __dirname,
-}]
+});
 ```
 
 ## URL Scheme Fallback
@@ -163,8 +164,8 @@ Should return:
 ### "File not found"
 
 The file path is incorrect. Check:
-- Babel plugin is generating correct paths
-- `cwd` option is set correctly
+- Metro plugin `cwd` option is set correctly
+- File exists at the specified path
 
 ### "Failed to launch editor"
 
