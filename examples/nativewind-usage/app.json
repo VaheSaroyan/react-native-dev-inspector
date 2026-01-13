@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "NativeWind Inspector Example",
+    "slug": "nativewind-inspector-example",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "nativewind-inspector-example",
+    "splash": {
+      "backgroundColor": "#4f46e5"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.nativewind-inspector"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4f46e5"
+      }
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-router"
+    ]
+  }
+}

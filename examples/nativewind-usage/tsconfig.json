@@ -1,0 +1,25 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "react-native-dev-inspector": [
+        "../../packages/react-native-dev-inspector/src"
+      ],
+      "react-native-dev-inspector/metro": [
+        "../../packages/react-native-dev-inspector/src/metro"
+      ],
+      "@rn-dev-inspector/core": [
+        "../../packages/core/src"
+      ],
+      "@rn-dev-inspector/metro-plugin": [
+        "../../packages/metro-plugin/src"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
+  ]
+}
