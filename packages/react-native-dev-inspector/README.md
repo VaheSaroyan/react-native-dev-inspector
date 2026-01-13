@@ -41,7 +41,21 @@ export default function App() {
 }
 ```
 
-**Done!** No babel plugin required.
+**Done!** The inspector works out of the box.
+
+### Optional: Enhanced Source Tracking
+
+For more precise "Open in Editor" functionality, add the babel plugin:
+
+```js
+// babel.config.js
+const { inspectorBabelPlugin } = require('react-native-dev-inspector/metro');
+
+module.exports = {
+  presets: ['babel-preset-expo'],
+  plugins: [inspectorBabelPlugin],
+};
+```
 
 ## Features
 

@@ -6,6 +6,10 @@ sidebar_position: 3
 
 The `@rn-dev-inspector/metro-plugin` provides the server-side middleware that handles opening files in your editor.
 
+:::tip Enhanced Source Tracking
+For more accurate "Open in Editor" functionality, also configure the [Babel Plugin](/docs/configuration/babel-plugin).
+:::
+
 ## Installation
 
 ```bash

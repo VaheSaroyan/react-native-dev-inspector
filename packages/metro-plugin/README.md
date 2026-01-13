@@ -1,6 +1,6 @@
 # @rn-dev-inspector/metro-plugin
 
-Metro middleware for React Native Dev Inspector - enables opening source files in your editor.
+Metro middleware and Babel plugin for React Native Dev Inspector - enables opening source files in your editor with precise source tracking.
 
 ## Installation
 
@@ -8,7 +8,16 @@ Metro middleware for React Native Dev Inspector - enables opening source files i
 npm install @rn-dev-inspector/metro-plugin
 ```
 
+## Features
+
+- **Metro Middleware**: Handles "Open in Editor" requests from the inspector
+- **Babel Plugin**: Injects source location info into JSX for precise tracking
+- **Cross-platform**: Works on macOS, Windows, and Linux
+- **Editor Auto-detection**: Automatically detects your running editor
+
 ## Setup
+
+### 1. Metro Config
 
 Add the plugin to your `metro.config.js`:
 
@@ -26,7 +35,54 @@ module.exports = withInspector(config, {
 });
 ```
 
-## Options
+### 2. Babel Plugin (Optional but Recommended)
+
+For precise source tracking, add the babel plugin to your `babel.config.js`:
+
+```js
+// babel.config.js
+const { inspectorBabelPlugin } = require('@rn-dev-inspector/metro-plugin');
+
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'], // or your existing presets
+    plugins: [
+      inspectorBabelPlugin,
+      // ... other plugins
+    ],
+  };
+};
+```
+
+The babel plugin injects `__callerSource` props into JSX elements:
+
+```tsx
+// Before transformation
+<View style={styles.container}>
+  <Text>Hello</Text>
+</View>
+
+// After transformation
+<View style={styles.container} __callerSource={{ fileName: "/path/to/file.tsx", lineNumber: 10, columnNumber: 3 }}>
+  <Text __callerSource={{ fileName: "/path/to/file.tsx", lineNumber: 11, columnNumber: 5 }}>Hello</Text>
+</View>
+```
+
+### Babel Plugin Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `userComponentsOnly` | `boolean` | `false` | Only inject into user components (skip native View/Text) |
+
+```js
+// Only inject into custom components
+plugins: [
+  [inspectorBabelPlugin, { userComponentsOnly: true }],
+],
+```
+
+## Metro Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -123,7 +179,11 @@ Check plugin status and configured editor.
 You can also use the functions directly:
 
 ```js
-const { openInEditor, createInspectorMiddleware } = require('@rn-dev-inspector/metro-plugin');
+const {
+  openInEditor,
+  createInspectorMiddleware,
+  inspectorBabelPlugin,
+} = require('@rn-dev-inspector/metro-plugin');
 
 // Open a file directly
 await openInEditor({
@@ -136,6 +196,12 @@ await openInEditor({
 
 // Create middleware for custom server
 const middleware = createInspectorMiddleware({ editor: 'code' });
+
+// Use babel plugin programmatically
+// babel.config.js
+module.exports = {
+  plugins: [inspectorBabelPlugin],
+};
 ```
 
 ## How It Works

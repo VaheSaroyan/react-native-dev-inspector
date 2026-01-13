@@ -66,6 +66,27 @@ npx expo start --clear
 
 **That's it!** Shake your device or press `Cmd+D` (iOS) / `Cmd+M` (Android) to access the dev menu, or tap the floating button.
 
+## Optional: Babel Plugin for Enhanced Source Tracking
+
+For more accurate "Open in Editor" functionality, add the optional babel plugin:
+
+```js title="babel.config.js"
+const { inspectorBabelPlugin } = require('react-native-dev-inspector/metro');
+
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      inspectorBabelPlugin,
+      // ... other plugins
+    ],
+  };
+};
+```
+
+See [Babel Plugin Configuration](/docs/configuration/babel-plugin) for more details.
+
 ## Metro Plugin Options
 
 | Option | Type | Default | Description |
@@ -95,3 +116,39 @@ The inspector works in both Expo Go and development builds:
 - **Development Builds**: Full support with Metro middleware
 
 For the best experience, use development builds (`npx expo run:ios` / `npx expo run:android`).
+
+## NativeWind Integration
+
+The inspector works seamlessly with NativeWind. Combine both Metro plugins:
+
+```js title="metro.config.js"
+const { getDefaultConfig } = require('expo/metro-config');
+const { withNativeWind } = require('nativewind/metro');
+const { withInspector } = require('react-native-dev-inspector/metro');
+
+const config = getDefaultConfig(__dirname);
+
+// Apply NativeWind first, then Inspector
+const nativeWindConfig = withNativeWind(config, { input: './global.css' });
+module.exports = withInspector(nativeWindConfig);
+```
+
+```js title="babel.config.js"
+const { inspectorBabelPlugin } = require('react-native-dev-inspector/metro');
+
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: [
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
+      'nativewind/babel',
+    ],
+    plugins: [
+      inspectorBabelPlugin,
+      'react-native-reanimated/plugin', // Must be last
+    ],
+  };
+};
+```
+
+See the [nativewind-usage example](https://github.com/VaheSaroyan/react-native-dev-inspector/tree/main/examples/nativewind-usage) for a complete setup.

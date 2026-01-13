@@ -6,6 +6,9 @@
  * and launching (same approach as react-dev-inspector and create-react-app)
  */
 
+// Re-export babel plugin
+export { default as inspectorBabelPlugin } from './babel-plugin';
+
 import * as path from 'path';
 import * as fs from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';

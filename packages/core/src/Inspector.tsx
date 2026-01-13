@@ -248,6 +248,31 @@ function parseTestIdForSource(testId: string): CodeInfo | null {
   };
 }
 
+/**
+ * Parse __callerSource object injected by babel plugin
+ * Format: { fileName: string, lineNumber: number, columnNumber: number }
+ */
+function parseCallerSource(callerSource: any, componentName?: string): CodeInfo | null {
+  if (!callerSource) return null;
+
+  // Handle object format from babel plugin
+  if (typeof callerSource === 'object' && callerSource.fileName) {
+    return {
+      relativePath: callerSource.fileName,
+      lineNumber: callerSource.lineNumber || 1,
+      columnNumber: callerSource.columnNumber || 1,
+      componentName: componentName || 'Component',
+    };
+  }
+
+  // Handle string format (legacy testID format)
+  if (typeof callerSource === 'string') {
+    return parseTestIdForSource(callerSource);
+  }
+
+  return null;
+}
+
 // Get the call site location (where a component is USED, not where it's DEFINED)
 // This walks up from a fiber to find where it was instantiated
 function getCallSiteInfo(fiber: Fiber): CodeInfo | null {
@@ -297,7 +322,26 @@ function isUserComponentName(name: string): boolean {
   if (firstChar !== firstChar.toUpperCase()) return false;
   // Filter out known native components
   const nativeComponents = ['View', 'Text', 'TouchableOpacity', 'ScrollView', 'Image', 'TextInput', 'Animated', 'RCT'];
-  return !nativeComponents.some(native => name === native || name.startsWith('RCT') || name.startsWith('Animated('));
+  if (nativeComponents.some(native => name === native || name.startsWith('RCT') || name.startsWith('Animated('))) {
+    return false;
+  }
+  // Filter out Expo Router, React Navigation, and root-level internal components
+  const internalComponents = [
+    // Root components
+    'App', 'Root', 'RootLayout', 'AppContainer', 'AppRoot', 'ErrorOverlay',
+    // Expo Router internals
+    'ContextNavigator', 'ContextNavigationContainer', 'ExpoRoot', 'RootErrorBoundary',
+    'QualifiedSlot', 'Slot', 'Layout', 'RouterRoot', 'RootLayoutNav',
+    'Navigator', 'Route', 'EmptyRoute', 'Try', 'Freeze', 'DelayedFreeze',
+    // React Navigation internals
+    'SceneView', 'CardContainer', 'Card', 'CardSheet', 'CardStack', 'NativeStackView',
+    'BottomTabView', 'DrawerView', 'Screen', 'ScreenContainer', 'ScreenStack',
+    'NavigationContainer', 'NavigationContainerInner', 'NavigationContent',
+    // Other framework internals
+    'SafeAreaProviderCompat', 'ErrorBoundary', 'Suspense', 'Provider', 'Consumer',
+    'ThemeProvider', 'GestureHandlerRootView', 'SafeAreaProvider',
+  ];
+  return !internalComponents.includes(name);
 }
 
 // Helper to extract style info from props
@@ -408,7 +452,8 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
         const data = item.getInspectorData(findNodeHandle);
         const testID = data.props?.testID;
         const callerSource = data.props?.__callerSource;
-        const parsed = testID ? parseTestIdForSource(testID) : null;
+        // Try parsing from testID first, then from __callerSource
+        const parsed = testID ? parseTestIdForSource(testID) : parseCallerSource(callerSource, name);
 
         // For user components, walk up the fiber tree to find the actual user component fiber
         // which has the __callerSource prop injected by the babel plugin
@@ -435,7 +480,7 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
 
             // Check if this fiber has __callerSource in its props
             if (props && props.__callerSource) {
-              const callSiteParsed = parseTestIdForSource(props.__callerSource);
+              const callSiteParsed = parseCallerSource(props.__callerSource, fiberName || name);
               if (callSiteParsed) {
                 (data as any)._userComponentCallSite = callSiteParsed;
                 foundUserComponent = true;
@@ -446,7 +491,7 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
             // Also check if this is the target user component and has a matching testID
             if (fiberName === name && props) {
               if (props.__callerSource) {
-                const callSiteParsed = parseTestIdForSource(props.__callerSource);
+                const callSiteParsed = parseCallerSource(props.__callerSource, name);
                 if (callSiteParsed) {
                   (data as any)._userComponentCallSite = callSiteParsed;
                   foundUserComponent = true;
@@ -628,13 +673,90 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
     for (let i = 0; i < Math.min(viewData.hierarchy.length, 5); i++) {
       const hierItem = viewData.hierarchy[i];
       const name = hierItem.name || 'Unknown';
-      if (!name.startsWith('RCT')) {
+      // Skip native components and internal framework components
+      if (!name.startsWith('RCT') && isUserComponentName(name)) {
         let measure = null;
         try {
           const data = hierItem.getInspectorData(findNodeHandle);
           measure = data.measure || null;
         } catch {}
         items.push({ name, codeInfo: null, fiber: null, style: null, boxModel: null, frame: null, measure });
+      }
+    }
+  }
+
+  // Last resort: if still no items, search hierarchy for user components
+  if (items.length === 0 && viewData.hierarchy) {
+    // Components to skip in fallback search
+    const skipInFallback = [
+      'withDevTools', 'ErrorOverlay', 'App', 'ExpoRoot', 'ContextNavigator',
+      'RootLayout', 'BottomTabNavigator', 'SceneView', 'ForwardRef',
+      'Route', 'Navigator', 'Provider', 'Consumer', 'Suspense', 'ErrorBoundary',
+    ];
+
+    // Collect all user-defined components from hierarchy
+    for (let i = 0; i < viewData.hierarchy.length; i++) {
+      const hierItem = viewData.hierarchy[i];
+      const name = hierItem.name || 'Unknown';
+
+      // Skip RCT, internal, and wrapper components
+      if (name.startsWith('RCT')) continue;
+      if (name.startsWith('withDevTools')) continue;
+      if (name.startsWith('CssInterop')) continue;
+      if (skipInFallback.some(skip => name === skip || name.startsWith(skip + '('))) continue;
+
+      // Include user screens/components and basic elements
+      const isUserComponent = name.endsWith('Screen') || name.endsWith('Card') ||
+          name.endsWith('Button') || name.endsWith('Component') || name.endsWith('Section') ||
+          name.endsWith('Item') || name.endsWith('Header') || name.endsWith('Footer');
+      const isBasicElement = name === 'View' || name === 'Text' || name === 'ScrollView' || name === 'Pressable';
+      const isCapitalized = name.charAt(0) === name.charAt(0).toUpperCase() && !name.includes('(');
+
+      if (isUserComponent || isBasicElement || isCapitalized) {
+        let measure = null;
+        let style = null;
+        let boxModel = null;
+        let codeInfo: CodeInfo | null = null;
+        let fiber = null;
+        try {
+          const data = hierItem.getInspectorData(findNodeHandle);
+          measure = data.measure || null;
+          fiber = data.fiber || null;
+          const extracted = extractStyleInfo(data?.props);
+          style = extracted.style;
+          boxModel = extracted.boxModel;
+
+          // For user components, walk up fiber tree to find where component is CALLED (not defined)
+          if (isUserComponent && fiber) {
+            let currentFiber = fiber;
+            let walkCount = 0;
+            while (currentFiber && walkCount < 30) {
+              const fiberType = currentFiber.type;
+              let fiberName: string | null = null;
+
+              if (typeof fiberType === 'function') {
+                fiberName = fiberType.displayName || fiberType.name || null;
+              } else if (fiberType && typeof fiberType === 'object') {
+                fiberName = fiberType.displayName || fiberType.render?.displayName || fiberType.render?.name || null;
+              }
+
+              // Found the component fiber - get source from its props
+              if (fiberName === name && currentFiber.memoizedProps?.__callerSource) {
+                codeInfo = parseCallerSource(currentFiber.memoizedProps.__callerSource, name);
+                break;
+              }
+
+              currentFiber = currentFiber.return;
+              walkCount++;
+            }
+          }
+
+          // Fallback: try to get source info from direct props
+          if (!codeInfo && data.props?.__callerSource) {
+            codeInfo = parseCallerSource(data.props.__callerSource, name);
+          }
+        } catch {}
+        items.push({ name, codeInfo, fiber, style, boxModel, frame: null, measure });
       }
     }
   }
@@ -956,27 +1078,15 @@ export const Inspector: React.FC<InspectorProps> = ({
         const hierarchy = buildHierarchy(viewData);
         const frame = viewData.frame;
 
-        // Find the best index - prefer the LAST (most specific) user component
+        // Find the best index - prefer the LAST (most specific) component with source info
         let bestIndex = hierarchy.length - 1;
-        let foundUserComponent = false;
 
-        // Search from the end to find the most specific user component with source info
+        // Search from the end to find the most specific component with source info
+        // With the babel plugin, even native components like Text/View have codeInfo
         for (let i = hierarchy.length - 1; i >= 0; i--) {
-          const item = hierarchy[i];
-          if (item.codeInfo && isUserComponentName(item.name)) {
+          if (hierarchy[i].codeInfo) {
             bestIndex = i;
-            foundUserComponent = true;
             break;
-          }
-        }
-
-        // If no user component found, fall back to last item with source info
-        if (!foundUserComponent) {
-          for (let i = hierarchy.length - 1; i >= 0; i--) {
-            if (hierarchy[i].codeInfo) {
-              bestIndex = i;
-              break;
-            }
           }
         }
 

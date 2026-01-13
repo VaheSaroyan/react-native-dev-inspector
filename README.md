@@ -17,7 +17,8 @@ Inspired by [react-dev-inspector](https://github.com/zthxxx/react-dev-inspector)
 - **Customizable** - Support for VS Code, Cursor, WebStorm, Sublime, and more
 - **Expo & CLI Support** - Works with both Expo and React Native CLI projects
 - **New Architecture Support** - Works with RN 0.68+, 0.73+, 0.82+ (Fabric)
-- **Zero Babel Config** - No babel plugin required!
+- **NativeWind Compatible** - Works seamlessly with Tailwind CSS for React Native
+- **Optional Babel Plugin** - Enhanced source tracking for more accurate "Open in Editor"
 
 ## Installation
 
@@ -60,7 +61,68 @@ export default function App() {
 }
 ```
 
-**That's it!** No babel plugin required.
+**That's it!** The inspector works out of the box.
+
+## Enhanced Source Tracking (Optional Babel Plugin)
+
+For more accurate "Open in Editor" functionality, you can optionally add the babel plugin. This injects source location information directly into your JSX components, providing precise file and line tracking.
+
+```js
+// babel.config.js
+const { inspectorBabelPlugin } = require('react-native-dev-inspector/metro');
+
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'], // or your existing presets
+    plugins: [
+      inspectorBabelPlugin,
+      // ... your other plugins
+    ],
+  };
+};
+```
+
+The babel plugin:
+- Injects `__callerSource` prop into JSX elements with file, line, and column info
+- Only processes user code (skips `node_modules`)
+- Works with both native and custom components
+
+## NativeWind Integration
+
+The inspector works seamlessly with NativeWind (Tailwind CSS for React Native). See the [nativewind-usage example](./examples/nativewind-usage) for a complete setup.
+
+```js
+// metro.config.js
+const { getDefaultConfig } = require('expo/metro-config');
+const { withNativeWind } = require('nativewind/metro');
+const { withInspector } = require('react-native-dev-inspector/metro');
+
+const config = getDefaultConfig(__dirname);
+
+// Apply NativeWind first, then Inspector
+const nativeWindConfig = withNativeWind(config, { input: './global.css' });
+module.exports = withInspector(nativeWindConfig);
+```
+
+```js
+// babel.config.js - with NativeWind
+const { inspectorBabelPlugin } = require('react-native-dev-inspector/metro');
+
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: [
+      ['babel-preset-expo', { jsxImportSource: 'nativewind' }],
+      'nativewind/babel',
+    ],
+    plugins: [
+      inspectorBabelPlugin,
+      'react-native-reanimated/plugin', // Must be last
+    ],
+  };
+};
+```
 
 ## Usage
 
@@ -252,7 +314,7 @@ The inspector works without any build-time transformations:
 
 1. Make sure you're running in development mode (`__DEV__` is true)
 2. Clear the Metro bundler cache: `npx expo start --clear` or `npx react-native start --reset-cache`
-3. Some library components may not have source info available
+3. Some library components may not have source info availab[RELEASE_NOTES.md](../../Desktop/RELEASE_NOTES.md)le
 
 ### Inspector doesn't show up
 

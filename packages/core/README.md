@@ -81,8 +81,14 @@ The inspector uses React Native's internal `getInspectorDataForViewAtPoint` API 
 1. Capture touch events on the screen
 2. Find the element at the touch point
 3. Traverse the React fiber tree to build component hierarchy
-4. Extract source locations from `_debugSource` and component props
+4. Extract source locations from:
+   - `_debugSource` (React's built-in debug info)
+   - `__callerSource` prop (injected by optional babel plugin for precise tracking)
 5. Display an inspector panel with hierarchy, styles, and box model
+
+### Enhanced Source Tracking
+
+When used with the babel plugin from `@rn-dev-inspector/metro-plugin`, the inspector receives precise source location information via the `__callerSource` prop injected into each JSX element. This provides more accurate "Open in Editor" functionality compared to relying solely on React's `_debugSource`.
 
 ## Requirements
 
