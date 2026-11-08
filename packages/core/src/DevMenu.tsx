@@ -22,6 +22,12 @@ export interface InspectorDevMenuProps {
   showOnlyWhenInactive?: boolean;
   /** Use minimal/compact style (smaller button) */
   compact?: boolean;
+  /**
+   * Whether to render the floating button (default `true`). Set to `false`
+   * to rely purely on the dev menu (React Native DevSettings / Expo dev menu)
+   * to toggle the inspector.
+   */
+  showFloatingButton?: boolean;
 }
 
 /**
@@ -33,10 +39,15 @@ export const InspectorDevMenu: React.FC<InspectorDevMenuProps> = ({
   containerStyle,
   showOnlyWhenInactive = true,
   compact = true,
+  showFloatingButton = true,
 }) => {
   const { isInspecting, toggleInspector } = useInspector();
 
   if (!__DEV__) {
+    return null;
+  }
+
+  if (!showFloatingButton) {
     return null;
   }
 
