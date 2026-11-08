@@ -76,9 +76,10 @@ interface MetroConfigLike {
  *   <=0.80: Libraries/Inspector/...
  */
 function findRealImpl(root: string): string | null {
+  // Derived from the intercepted module specifiers above so the two stay in sync
   const candidates = [
-    'node_modules/react-native/src/private/devsupport/devmenu/elementinspector/getInspectorDataForViewAtPoint.js',
-    'node_modules/react-native/Libraries/Inspector/getInspectorDataForViewAtPoint.js',
+    `node_modules/${PRIVATE_082}.js`,
+    `node_modules/${PUBLIC_LE080}.js`,
   ];
   for (const rel of candidates) {
     const p = path.join(root, rel);

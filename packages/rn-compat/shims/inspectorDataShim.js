@@ -48,26 +48,48 @@ function nameOfFiber(fiber) {
   return null;
 }
 
+// Shared bounded DFS over a fiber subtree. visit(node) returns a truthy value
+// to stop the walk with that result, or a falsy value to keep going. maxDepth
+// (levels below root, undefined = unlimited) and maxVisited mirror the caps
+// the individual walkers used before they were deduplicated.
+function walkFiberTree(root, maxVisited, visit, maxDepth) {
+  try {
+    let found = null;
+    let visited = 0;
+    (function dfs(node, depth) {
+      if (found || !node || visited > maxVisited) return;
+      if (maxDepth !== undefined && depth > maxDepth) return;
+      visited++;
+      const result = visit(node);
+      if (result) {
+        found = result;
+        return;
+      }
+      dfs(node.child, depth + 1);
+      if (!found) dfs(node.sibling, depth + 1);
+    })(root, 0);
+    return found;
+  } catch (e) {
+    return null;
+  }
+}
+
 function pickSourceFiber(fiber) {
   try {
     if (fiber && fiber.memoizedProps && fiber.memoizedProps.__callerSource) {
       return fiber;
     }
-    let found = null;
-    let visited = 0;
-    (function dfs(node, depth) {
-      if (found || !node || depth > 12 || visited > 300) return;
-      if (node !== fiber) {
-        visited++;
+    // DFS from the child (the root fiber itself was already checked above);
+    // depth cap 11 = 12 levels below the child, same as before deduplication
+    const found = walkFiberTree(
+      fiber && fiber.child,
+      300,
+      node => {
         const p = node.memoizedProps;
-        if (p && p.__callerSource) {
-          found = node;
-          return;
-        }
-      }
-      dfs(node.child, depth + 1);
-      if (!found) dfs(node.sibling, depth + 1);
-    })(fiber.child, 1);
+        return p && p.__callerSource ? node : null;
+      },
+      11
+    );
     return found || fiber;
   } catch (e) {
     return fiber;
@@ -107,24 +129,15 @@ function findTouchedHostFiber(containerFiber, nativeTag) {
       root = root.return;
       up++;
     }
-    let found = null;
-    let visited = 0;
-    (function dfs(node) {
-      if (found || !node || visited > 5000) return;
-      visited++;
+    return walkFiberTree(root, 5000, node => {
       if (node.tag === 5 && node.stateNode) {
         const sn = node.stateNode;
         const tag =
           sn._nativeTag != null ? sn._nativeTag : typeof sn.getTag === 'function' ? sn.getTag() : null;
-        if (tag === nativeTag) {
-          found = node;
-          return;
-        }
+        return tag === nativeTag ? node : null;
       }
-      dfs(node.child);
-      if (!found) dfs(node.sibling);
-    })(root);
-    return found;
+      return null;
+    });
   } catch (e) {
     return null;
   }
@@ -136,23 +149,9 @@ function findTouchedHostFiber(containerFiber, nativeTag) {
 // UIManager.measure), so require('react-native') is not needed here (the shim
 // lives outside the project directory and Metro would fail to resolve it).
 function findHostStateNode(fiber) {
-  try {
-    let found = null;
-    let visited = 0;
-    (function dfs(node) {
-      if (found || !node || visited > 300) return;
-      visited++;
-      if (node.tag === 5 && node.stateNode) {
-        found = node.stateNode;
-        return;
-      }
-      dfs(node.child);
-      if (!found) dfs(node.sibling);
-    })(fiber);
-    return found;
-  } catch (e) {
-    return null;
-  }
+  return walkFiberTree(fiber, 300, node => {
+    return node.tag === 5 && node.stateNode ? node.stateNode : null;
+  });
 }
 
 function measureFor(stateNode) {
@@ -211,20 +210,11 @@ function baseNameToComponentName(fileName) {
 // render, e.g. <AnimatedBaseButton> at button.tsx:161 -> "Button"
 function deriveAnonymousName(fiber) {
   try {
-    let found = null;
-    let visited = 0;
-    (function dfs(node) {
-      if (found || !node || visited > 60) return;
-      visited++;
+    const fileName = walkFiberTree(fiber && fiber.child, 60, node => {
       const parsed = parseCallerSourceRaw(node.memoizedProps);
-      if (parsed && parsed.fileName) {
-        found = parsed.fileName;
-        return;
-      }
-      dfs(node.child);
-      if (!found) dfs(node.sibling);
-    })(fiber.child, 1);
-    return found ? baseNameToComponentName(found) : null;
+      return parsed && parsed.fileName ? parsed.fileName : null;
+    });
+    return fileName ? baseNameToComponentName(fileName) : null;
   } catch (e) {
     return null;
   }

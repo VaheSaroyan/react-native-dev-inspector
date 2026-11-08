@@ -18,6 +18,7 @@ import React, {
 import {
   View,
   Text,
+  GestureResponderEvent,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -812,6 +813,17 @@ export const Inspector: React.FC<InspectorProps> = ({
     return !!panelBounds && pageY >= panelBounds.top && pageY <= panelBounds.bottom;
   }, [panelBounds]);
 
+  // Shared touch-interception predicate: the touch is captured unless it
+  // lands inside the panel's real bounds (which stay reserved for the panel)
+  const shouldInterceptTouch = useCallback(
+    (event: GestureResponderEvent) => {
+      if (!isInspecting) return false;
+      const {pageY} = event.nativeEvent;
+      return !isInPanelArea(pageY);
+    },
+    [isInspecting, isInPanelArea],
+  );
+
   const contentViewRef = useRef<View | null>(null);
   const { height: screenHeight } = Dimensions.get('window');
 
@@ -976,16 +988,12 @@ export const Inspector: React.FC<InspectorProps> = ({
     <InspectorContext.Provider value={contextValue}>
       <View
         style={styles.container}
-        onStartShouldSetResponderCapture={(event) => {
-          if (!isInspecting) return false;
-          // Capture-phase interception: on RN 0.86+ Fabric hit-testing
-          // dispatches the touch straight to the deepest content view, so
-          // the touchLayer sibling would never see it. Intercepting on the
-          // container (an ancestor of all content) always wins. The panel
-          // area is ceded so its own controls stay responsive.
-          const { pageY } = event.nativeEvent;
-          return !isInPanelArea(pageY);
-        }}
+        onStartShouldSetResponderCapture={shouldInterceptTouch}
+        // Capture-phase interception note: on RN 0.86+ Fabric hit-testing
+        // dispatches the touch straight to the deepest content view, so the
+        // touchLayer sibling would never see it. Intercepting on the container
+        // (an ancestor of all content) always wins. The panel area is ceded so
+        // its own controls stay responsive.
         onResponderGrant={handleTouchStart}
       >
         <FiberCapture onViewRefCapture={handleViewRefCapture}>
@@ -997,11 +1005,7 @@ export const Inspector: React.FC<InspectorProps> = ({
             {/* Touch capture layer */}
             <View
               style={styles.touchLayer}
-              onStartShouldSetResponder={(event) => {
-                // Cede exactly the panel's real area to the panel
-                const { pageY } = event.nativeEvent;
-                return !isInPanelArea(pageY);
-              }}
+              onStartShouldSetResponder={shouldInterceptTouch}
               onResponderGrant={handleTouchStart}
               onResponderMove={handleTouchStart}
             />
