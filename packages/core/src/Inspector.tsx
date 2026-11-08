@@ -638,19 +638,34 @@ const InspectorPanel: React.FC<{
 }> = ({ hierarchy, selectedIndex, onSelectIndex, onOpenEditor, onClose, panelPosition, frame, openError, onPanelLayout }) => {
   const selectedItem = hierarchy[selectedIndex];
   const scrollViewRef = React.useRef<ScrollView>(null);
+  // Real layout of each breadcrumb item (reported via onLayout), used for
+  // precise scroll positioning. Item widths vary a lot (short names vs long
+  // component names), so a fixed-width estimate will not do.
+  // Note: scrollResponderScrollNativeHandleToKeyboard was tried first — it
+  // does not actually scroll on an RN 0.72 horizontal ScrollView (that
+  // responder path depends on a focus scenario), hence this approach.
+  const itemLayoutsRef = React.useRef<Array<{x: number; width: number}>>([]);
 
-  // Scroll to selected item - use index-based estimation
+  // Scroll to selected item - precise scrolling from measured layout, with an
+  // average-width estimate as fallback when not yet measured
   React.useEffect(() => {
-    if (scrollViewRef.current && hierarchy.length > 0) {
-      // Estimate position: ~80px per item on average
-      const estimatedX = selectedIndex * 80;
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({
-          x: Math.max(0, estimatedX - 40),
-          animated: true
-        });
-      }, 150);
+    if (!scrollViewRef.current || hierarchy.length === 0) {
+      return;
     }
+    const timer = setTimeout(() => {
+      const layout = itemLayoutsRef.current[selectedIndex];
+      let x: number;
+      if (layout) {
+        // Bring the selected item into view: align left, leaving a little
+        // headroom for the preceding item
+        x = Math.max(0, layout.x - 24);
+      } else {
+        // Fallback estimate: ~80px per item on average
+        x = Math.max(0, selectedIndex * 80 - 40);
+      }
+      scrollViewRef.current?.scrollTo({x, animated: true});
+    }, 100);
+    return () => clearTimeout(timer);
   }, [selectedIndex, hierarchy.length]);
 
   return (
@@ -672,6 +687,10 @@ const InspectorPanel: React.FC<{
               <View
                 key={index}
                 style={styles.hierarchyItemWrapper}
+                onLayout={(event) => {
+                  const {x, width} = event.nativeEvent.layout;
+                  itemLayoutsRef.current[index] = {x, width};
+                }}
               >
                 {index > 0 && <Text style={styles.hierarchySeparator}> › </Text>}
                 <TouchableOpacity
