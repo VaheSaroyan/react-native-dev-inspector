@@ -448,7 +448,10 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
     }
 
     // For native components or when we can't find call site, use the testID directly
-    if (testID && parsed) {
+    // Under Paper (RN <= 0.80) hierarchy items have no fiber, so codeInfo can
+    // only come from __callerSource in host props. Host elements from business
+    // code generally carry no testID, so keep any parsed hit.
+    if (parsed) {
       // Check if this native element is in an "inner" file (inside a user component)
       // If there's a file boundary, we should also add the call site entry
       const currentFile = parsed.relativePath;
