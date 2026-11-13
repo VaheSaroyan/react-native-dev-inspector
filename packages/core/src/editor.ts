@@ -7,7 +7,7 @@
  * - /__open-stack-frame-in-editor (legacy)
  */
 
-import {Platform, Linking, NativeModules} from 'react-native';
+import {Platform, Linking, NativeModules, TurboModuleRegistry} from 'react-native';
 import type {CodeInfo} from './fiber';
 import {buildEditorQueryString} from './editorQuery';
 
@@ -21,28 +21,23 @@ export interface LaunchEditorOptions {
 }
 
 /**
- * Resolve the dev server from the bundle URL that Metro served this JS from.
- *
- * This is the only reliable source: on a physical device, over LAN, with a
- * tunnel, or on a non-default port, the dev server is not on localhost. The
- * bundle URL always points at whichever host actually served the bundle.
+ * Derive the dev server origin from the URL the app actually loaded its
+ * bundle from (NativeModules.SourceCode.scriptURL). This makes "Open in
+ * editor" work out of the box on real devices over LAN, emulators and
+ * adb-reverse setups alike, without hardcoding devServerUrl.
  */
-function getDevServerUrlFromScriptUrl(): string | null {
+function getScriptUrlOrigin(): string | null {
   try {
-    // The legacy bridge flattens constants onto the module; bridgeless does
-    // not. Try both rather than branching on which one exists - `getConstants`
-    // can be present and still not carry `scriptURL`.
-    const mod: any = NativeModules?.SourceCode;
-    const scriptURL: unknown = mod?.scriptURL ?? mod?.getConstants?.()?.scriptURL;
-
-    if (typeof scriptURL !== 'string' || !scriptURL) return null;
-
-    // e.g. "http://192.168.1.20:8081/index.bundle?platform=ios&dev=true"
-    // Stop at `?` and `#` too, for a bundle URL served from the host root.
+    // SourceCode is a TurboModule on newer RN (under bridgeless, legacy
+    // NativeModules still returns an interop proxy). scriptURL lives in
+    // getConstants() rather than as a direct module property (the legacy
+    // bridge flattens constants, bridgeless does not) — try both paths.
+    const mod: any = NativeModules?.SourceCode ?? (TurboModuleRegistry as any)?.get?.('SourceCode');
+    const scriptURL: string | undefined = mod?.scriptURL ?? mod?.getConstants?.()?.scriptURL;
+    if (!scriptURL) return null;
     const match = scriptURL.match(/^https?:\/\/[^/?#]+/);
     return match ? match[0] : null;
   } catch {
-    // SourceCode is unavailable in some runtimes (e.g. tests, web)
     return null;
   }
 }
@@ -53,8 +48,8 @@ function getDevServerUrlFromScriptUrl(): string | null {
  * platform's conventional simulator/emulator address.
  */
 function getDefaultDevServerUrl(): string {
-  const fromScript = getDevServerUrlFromScriptUrl();
-  if (fromScript) return fromScript;
+  const origin = getScriptUrlOrigin();
+  if (origin) return origin;
 
   if (Platform.OS === 'android') {
     // Android emulator maps the host machine's localhost to 10.0.2.2
