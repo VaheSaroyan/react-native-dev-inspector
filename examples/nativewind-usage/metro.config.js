@@ -1,6 +1,7 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
 const { withInspector } = require('@rn-dev-inspector/metro-plugin');
+const { withInspectorCompat } = require('@rn-dev-inspector/rn-compat');
 const path = require('path');
 
 const projectRoot = __dirname;
@@ -27,7 +28,11 @@ const nativeWindConfig = withNativeWind(config, {
   input: './global.css',
 });
 
-// Add inspector middleware
-module.exports = withInspector(nativeWindConfig, {
+// Add inspector middleware.
+// withInspectorCompat adapts the Metro resolver to this RN version (0.76 is
+// Fabric, where hierarchy items carry no fiber); withInspector adds the
+// open-in-editor endpoint. Compat goes innermost so the resolver it installs
+// is in place before the middleware wraps the config.
+module.exports = withInspector(withInspectorCompat(nativeWindConfig), {
   cwd: projectRoot,
 });
