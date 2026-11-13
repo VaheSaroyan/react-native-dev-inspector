@@ -18,6 +18,12 @@
  */
 
 /**
+ * React Native defines this in every bundle; it is absent under plain Node
+ * (tests), where we treat the environment as development.
+ */
+declare const __DEV__: boolean | undefined;
+
+/**
  * URLSearchParams polyfill for RN <= 0.72 (react-native/Libraries/Blob/URL.js):
  * only get/getAll/has/append exist; set() throws outright with
  * "URLSearchParams.set is not implemented". The inspector's Open-in-editor
@@ -92,4 +98,13 @@ function patchURLSearchParams(): void {
   }
 }
 
-patchURLSearchParams();
+// Dev-only. This mutates a global prototype, so it must never run in a
+// release build: a developer tool has no business changing the runtime
+// semantics of the shipped app. The inspector's own use of URLSearchParams
+// is already safe without this patch - buildEditorQueryString (see
+// packages/core/src/editorQuery.ts) probes behaviourally and falls back to
+// manual percent-encoding - so the patch is a convenience for app code on
+// old RN, not something the inspector depends on.
+if (typeof __DEV__ === 'undefined' || __DEV__) {
+  patchURLSearchParams();
+}

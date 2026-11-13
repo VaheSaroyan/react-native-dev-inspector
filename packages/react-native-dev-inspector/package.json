@@ -16,12 +16,15 @@
     "./rn-compat": {
       "types": "./dist/rn-compat.d.ts",
       "default": "./dist/rn-compat.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
     "metro.js",
-    "metro.d.ts"
+    "metro.d.ts",
+    "rn-compat.js",
+    "rn-compat.d.ts"
   ],
   "scripts": {
     "build": "tsc",
@@ -59,16 +62,5 @@
   },
   "devDependencies": {
     "@types/react": "^18.2.0"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./metro": {
-      "types": "./dist/metro.d.ts",
-      "default": "./dist/metro.js"
-    },
-    "./package.json": "./package.json"
   }
 }

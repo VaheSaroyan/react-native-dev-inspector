@@ -38,6 +38,9 @@
   "exports": {
     ".": "./dist/index.js",
     "./runtime": "./dist/runtime.js",
-    "./runtime.js": "./dist/runtime.js"
+    "./runtime.js": "./dist/runtime.js",
+    "./dist/runtime": "./dist/runtime.js",
+    "./dist/runtime.js": "./dist/runtime.js",
+    "./package.json": "./package.json"
   }
 }
