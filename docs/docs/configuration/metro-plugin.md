@@ -140,7 +140,7 @@ Health check endpoint:
 ```json
 {
   "status": "ok",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "editor": "code"
 }
 ```
@@ -182,7 +182,7 @@ can give it a different environment than your terminal.
 
 ```bash
 curl http://localhost:8081/__rn_dev_inspector__/status
-# {"status":"ok","version":"1.2.0","editor":"code"}
+# {"status":"ok","version":"1.2.1","editor":"code"}
 ```
 
 A 404 means `withInspector()` isn't applied in `metro.config.js`, or Metro

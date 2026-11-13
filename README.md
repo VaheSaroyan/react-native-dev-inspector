@@ -378,7 +378,7 @@ The middleware exposes a status endpoint. From the machine running Metro:
 
 ```bash
 curl http://localhost:8081/__rn_dev_inspector__/status
-# {"status":"ok","version":"1.2.0","editor":"code"}
+# {"status":"ok","version":"1.2.1","editor":"code"}
 ```
 
 If this 404s, `withInspector()` is not wired into `metro.config.js`, or Metro

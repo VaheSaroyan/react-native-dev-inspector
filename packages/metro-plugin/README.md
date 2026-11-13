@@ -159,7 +159,7 @@ Check plugin status and configured editor.
 ```json
 {
   "status": "ok",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "editor": "code"
 }
 ```

@@ -9,6 +9,7 @@
 
 import {Platform, Linking, NativeModules} from 'react-native';
 import type {CodeInfo} from './fiber';
+import {buildEditorQueryString} from './editorQuery';
 
 export interface LaunchEditorOptions {
   /** Source code information */
@@ -28,15 +29,18 @@ export interface LaunchEditorOptions {
  */
 function getDevServerUrlFromScriptUrl(): string | null {
   try {
-    const scriptURL: unknown = NativeModules?.SourceCode?.getConstants
-      ? NativeModules.SourceCode.getConstants().scriptURL
-      : NativeModules?.SourceCode?.scriptURL;
+    // The legacy bridge flattens constants onto the module; bridgeless does
+    // not. Try both rather than branching on which one exists - `getConstants`
+    // can be present and still not carry `scriptURL`.
+    const mod: any = NativeModules?.SourceCode;
+    const scriptURL: unknown = mod?.scriptURL ?? mod?.getConstants?.()?.scriptURL;
 
     if (typeof scriptURL !== 'string' || !scriptURL) return null;
 
     // e.g. "http://192.168.1.20:8081/index.bundle?platform=ios&dev=true"
-    const match = scriptURL.match(/^(https?:\/\/[^/]+)/);
-    return match ? match[1] : null;
+    // Stop at `?` and `#` too, for a bundle URL served from the host root.
+    const match = scriptURL.match(/^https?:\/\/[^/?#]+/);
+    return match ? match[0] : null;
   } catch {
     // SourceCode is unavailable in some runtimes (e.g. tests, web)
     return null;
@@ -58,29 +62,6 @@ function getDefaultDevServerUrl(): string {
   }
   // iOS simulator shares the host's localhost
   return 'http://localhost:8081';
-}
-
-/**
- * Build query string for editor endpoint
- */
-function buildEditorQueryString(codeInfo: CodeInfo, editor?: string): string {
-  const params = new URLSearchParams();
-
-  // Use absolutePath if available, otherwise relativePath
-  const file = codeInfo.absolutePath || codeInfo.relativePath;
-  params.set('file', file);
-
-  if (codeInfo.lineNumber) {
-    params.set('line', String(codeInfo.lineNumber));
-  }
-  if (codeInfo.columnNumber) {
-    params.set('column', String(codeInfo.columnNumber));
-  }
-  if (editor) {
-    params.set('editor', editor);
-  }
-
-  return params.toString();
 }
 
 /**
