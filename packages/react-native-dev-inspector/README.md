@@ -51,6 +51,19 @@ module.exports = withInspector(config, {
 });
 ```
 
+On React Native `<= 0.81` or `0.82+`, also wrap with the compatibility layer,
+which adapts to where RN keeps its inspector internals:
+
+```js
+const { withInspectorCompat } = require('react-native-dev-inspector/rn-compat');
+
+module.exports = withInspector(withInspectorCompat(config), { editor: 'code' });
+```
+
+It warns and leaves the config alone if it can't find your `react-native`
+install, so it never breaks the bundler. See the root README for the version
+matrix.
+
 ### 3. Wrap Your App
 
 ```tsx
@@ -99,6 +112,9 @@ import {
 
 // Metro plugin
 const { withInspector } = require('react-native-dev-inspector/metro');
+
+// RN version compatibility layer (Metro resolver)
+const { withInspectorCompat } = require('react-native-dev-inspector/rn-compat');
 ```
 
 ## API

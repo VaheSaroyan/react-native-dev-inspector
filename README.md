@@ -89,6 +89,35 @@ module.exports = withInspector(config, {
 });
 ```
 
+<details>
+<summary><strong>Older or newer React Native?</strong> Add the compatibility layer.</summary>
+
+React Native moves `getInspectorDataForViewAtPoint` around and changes what the
+inspector hierarchy carries. `withInspectorCompat` wraps the Metro resolver to
+paper over those differences:
+
+```js
+const { withInspector } = require('react-native-dev-inspector/metro');
+const { withInspectorCompat } = require('react-native-dev-inspector/rn-compat');
+
+module.exports = withInspector(withInspectorCompat(config), {
+  editor: 'code',
+});
+```
+
+| React Native | What it fixes |
+|--------------|---------------|
+| `<= 0.72` (Paper) | Rebuilds the hierarchy from the tapped host fiber, so wrappers that don't forward props (`Button`, `Touchable`) still resolve to your JSX |
+| `0.73 - 0.81` (Fabric) | Restores hierarchy fibers and finds source info in the subtree |
+| `0.82+` | Intercepts the new private module path (verified on 0.86) |
+
+It never throws: if it can't find your `react-native` install it warns and
+leaves the config untouched, so a bad setup degrades to the stock inspector
+rather than taking the bundler down. On a recent RN that already works, you
+don't need it.
+
+</details>
+
 ### 3. Wrap Your App
 
 ```tsx
@@ -349,6 +378,7 @@ The inspector works in three stages:
 | `@rn-dev-inspector/core` | (transitive) | Core inspector implementation |
 | `@rn-dev-inspector/metro-plugin` | (transitive) | Metro middleware that launches your editor |
 | `@rn-dev-inspector/expo-plugin` | no | Optional `expo prebuild` setup helper |
+| `@rn-dev-inspector/rn-compat` | (transitive) | RN version compatibility layer, exposed at `/rn-compat` |
 
 ## Development
 
