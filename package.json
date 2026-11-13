@@ -1,7 +1,7 @@
 {
   "name": "react-native-dev-inspector",
   "version": "1.0.0",
-  "description": "Click on React Native components to jump to source code in your IDE",
+  "description": "git remote add origin git@github.com:VaheSaroyan/react-native-dev-inspector.git",
   "private": true,
   "workspaces": [
     "packages/*"

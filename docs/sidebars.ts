@@ -17,8 +17,8 @@ const sidebars: SidebarsConfig = {
       label: 'Configuration',
       items: [
         'configuration/editor-setup',
-        'configuration/metro-plugin',
         'configuration/babel-plugin',
+        'configuration/metro-plugin',
       ],
     },
     {

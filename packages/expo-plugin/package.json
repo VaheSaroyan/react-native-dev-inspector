@@ -1,0 +1,45 @@
+{
+  "name": "@rn-dev-inspector/expo-plugin",
+  "version": "1.0.5",
+  "description": "Expo config plugin for React Native Dev Inspector",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "app.plugin.js"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "expo",
+    "expo-plugin",
+    "react-native",
+    "inspector",
+    "devtools"
+  ],
+  "license": "MIT",
+  "author": "VaheSaroyan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaheSaroyan/react-native-dev-inspector.git",
+    "directory": "packages/expo-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/VaheSaroyan/react-native-dev-inspector/issues"
+  },
+  "homepage": "https://github.com/VaheSaroyan/react-native-dev-inspector#readme",
+  "peerDependencies": {
+    "expo": ">=47.0.0"
+  },
+  "dependencies": {
+    "@rn-dev-inspector/babel-plugin": "workspace:*"
+  },
+  "devDependencies": {
+    "@expo/config-plugins": "^7.0.0",
+    "@types/node": "^20.10.0"
+  }
+}

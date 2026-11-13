@@ -445,19 +445,6 @@ const SKIP_COMPONENT_NAMES = [
   'RootLayout',
   'Layout',
   'ErrorBoundary',
-  'ContextNavigator',
-  'ContextNavigationContainer',
-  'ExpoRoot',
-  'RootErrorBoundary',
-  'Try',
-  'Freeze',
-  'DelayedFreeze',
-  'RouterRoot',
-  'RootLayoutNav',
-  'Navigator',
-  'useFilterScreenChildren',
-  'Route',
-  'EmptyRoute',
 ];
 
 /**

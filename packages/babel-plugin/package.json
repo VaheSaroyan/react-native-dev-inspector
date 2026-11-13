@@ -1,0 +1,40 @@
+{
+  "name": "@rn-dev-inspector/babel-plugin",
+  "version": "1.0.5",
+  "description": "Babel plugin to inject source location into React Native components",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "babel-plugin",
+    "react-native",
+    "inspector",
+    "devtools"
+  ],
+  "license": "MIT",
+  "author": "VaheSaroyan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VaheSaroyan/react-native-dev-inspector.git",
+    "directory": "packages/babel-plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/VaheSaroyan/react-native-dev-inspector/issues"
+  },
+  "homepage": "https://github.com/VaheSaroyan/react-native-dev-inspector#readme",
+  "peerDependencies": {
+    "@babel/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@types/babel__core": "^7.20.0"
+  }
+}
