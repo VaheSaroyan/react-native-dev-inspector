@@ -65,7 +65,7 @@ Combines NativeWind and Inspector middleware:
 ```js
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
-const { withInspector } = require('react-native-dev-inspector/metro');
+const { withInspector } = require('@rn-dev-inspector/metro-plugin');
 
 const config = getDefaultConfig(__dirname);
 
@@ -79,8 +79,6 @@ module.exports = withInspector(nativeWindConfig);
 Includes the inspector babel plugin for precise source tracking:
 
 ```js
-const { inspectorBabelPlugin } = require('react-native-dev-inspector/metro');
-
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -89,7 +87,7 @@ module.exports = function (api) {
       'nativewind/babel',
     ],
     plugins: [
-      inspectorBabelPlugin,
+      '@rn-dev-inspector/babel-plugin',
       'react-native-reanimated/plugin', // Must be last
     ],
   };

@@ -102,13 +102,18 @@ Solutions to common problems you might encounter.
    </Inspector>
    ```
 
-3. **Android emulator specific**
+3. **Physical devices and Android emulators**
 
-   Android emulator uses `10.0.2.2` for localhost:
+   You normally don't need to set `devServerUrl` at all: the inspector reads the
+   host that actually served the JS bundle, which is correct for simulators,
+   emulators, physical devices on your LAN, and tunnels alike.
+
+   Set it explicitly only to override that, for example when the dev server is
+   reachable at a different address from the device:
    ```tsx
-   const devUrl = Platform.OS === 'android'
-     ? 'http://10.0.2.2:8081'
-     : 'http://localhost:8081';
+   <Inspector devServerUrl="http://192.168.1.20:8081">
+     <App />
+   </Inspector>
    ```
 
 ## TypeScript Errors

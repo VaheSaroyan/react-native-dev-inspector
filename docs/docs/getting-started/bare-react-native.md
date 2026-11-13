@@ -39,8 +39,8 @@ module.exports = {
       // Patterns to exclude (default: node_modules, .expo, .next)
       excludes: [/node_modules/, /\.generated\./],
 
-      // Custom attribute prefix (default: 'data-inspector')
-      attributePrefix: 'data-inspector',
+      // Keep testID free for automation tests (default: true)
+      injectTestId: true,
     }],
   ],
 };

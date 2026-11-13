@@ -1,22 +1,21 @@
 {
   "name": "react-native-dev-inspector",
-  "version": "1.0.0",
-  "description": "git remote add origin git@github.com:VaheSaroyan/react-native-dev-inspector.git",
+  "version": "1.2.0",
+  "description": "Click on React Native components to jump to source code in your IDE - monorepo",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
-    "build": "pnpm -r build",
-    "clean": "pnpm -r clean",
-    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r --filter \"./packages/*\" build",
+    "clean": "pnpm -r --filter \"./packages/*\" clean",
+    "typecheck": "pnpm -r --filter \"./packages/*\" typecheck",
     "lint": "eslint packages --ext .ts,.tsx",
     "prepare": "pnpm build",
-    "version:patch": "pnpm -r exec npm version patch --no-git-tag-version",
-    "version:minor": "pnpm -r exec npm version minor --no-git-tag-version",
-    "version:major": "pnpm -r exec npm version major --no-git-tag-version",
-    "publish:dry": "pnpm build && pnpm -r publish --dry-run --no-git-checks",
-    "publish:npm": "pnpm build && pnpm -r publish --access public --no-git-checks"
+    "version:patch": "pnpm -r --filter \"./packages/*\" exec npm version patch --no-git-tag-version",
+    "version:minor": "pnpm -r --filter \"./packages/*\" exec npm version minor --no-git-tag-version",
+    "version:major": "pnpm -r --filter \"./packages/*\" exec npm version major --no-git-tag-version",
+    "publish:dry": "pnpm build && pnpm -r --filter \"./packages/*\" publish --dry-run --no-git-checks",
+    "publish:npm": "pnpm build && pnpm -r --filter \"./packages/*\" publish --access public --no-git-checks",
+    "build:docs": "pnpm --filter docs build",
+    "test": "pnpm -r --filter \"./packages/*\" test"
   },
   "repository": {
     "type": "git",
@@ -39,7 +38,6 @@
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.0",
-    "@types/react-native": "^0.72.0",
     "eslint": "^8.55.0",
     "prettier": "^3.1.0",
     "typescript": "^5.3.0"

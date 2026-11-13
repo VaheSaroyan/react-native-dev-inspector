@@ -307,7 +307,7 @@ export function getFiberName(fiber: Fiber): string {
  * Parse testID in format: ComponentName@file:line:column
  * Example: "CustomButton@components/Button.tsx:25:5"
  */
-function parseTestIdForSource(testId: string): CodeInfo | null {
+export function parseTestIdForSource(testId: string): CodeInfo | null {
   if (!testId || typeof testId !== 'string') return null;
 
   const match = testId.match(/^([^@]+)@(.+):(\d+):(\d+)$/);
@@ -333,15 +333,33 @@ function parseTestIdForSource(testId: string): CodeInfo | null {
 export function getCodeInfoFromFiber(fiber: Fiber): CodeInfo | null {
   const props = fiber.memoizedProps || {};
 
-  // First, try to get from testID (format: ComponentName@file:line:column)
-  // This is injected by our babel plugin and is the most reliable method
+  // First, try testID (format: ComponentName@file:line:column). For the root
+  // element of a user component the babel plugin sets this to the component's
+  // call site, which is what you usually want to jump to.
   const testId = props.testID;
   if (testId) {
     const parsed = parseTestIdForSource(testId);
     if (parsed) return parsed;
   }
 
-  // Second, try to get from _debugSource (injected by React's babel plugin)
+  // Next, __callerSource: present on user components, records where the
+  // component was used rather than where it was defined.
+  const callerSource = props.__callerSource;
+  if (callerSource) {
+    const parsed = parseTestIdForSource(callerSource);
+    if (parsed) return parsed;
+  }
+
+  // Next, dataInspectorSource. The babel plugin always sets this, and unlike
+  // testID it is never overwritten by user-defined test identifiers, so it is
+  // the reliable fallback when someone sets their own testID.
+  const dataSource = props.dataInspectorSource;
+  if (dataSource) {
+    const parsed = parseTestIdForSource(dataSource);
+    if (parsed) return parsed;
+  }
+
+  // Finally, _debugSource (injected by React's own babel plugin)
   if (fiber._debugSource) {
     const { fileName, lineNumber, columnNumber } = fiber._debugSource;
     return {
@@ -468,10 +486,8 @@ function shouldSkipComponent(componentName: string): boolean {
 export function findNearestFiberWithSource(fiber: Fiber | null): InspectInfo | null {
   let current = fiber;
   let fallbackInfo: InspectInfo | null = null;
-  let checkedCount = 0;
 
   while (current) {
-    checkedCount++;
     // Check if this fiber has source info
     const codeInfo = getCodeInfoFromFiber(current);
     const componentName = getFiberName(current);
@@ -531,10 +547,8 @@ export function findNearestFiberWithSource(fiber: Fiber | null): InspectInfo | n
 export function findNearestUserComponentWithSource(fiber: Fiber | null): InspectInfo | null {
   let current = fiber;
   let hostComponentFallback: InspectInfo | null = null;
-  let checkedCount = 0;
 
   while (current) {
-    checkedCount++;
     const codeInfo = getCodeInfoFromFiber(current);
     const componentName = getFiberName(current);
 

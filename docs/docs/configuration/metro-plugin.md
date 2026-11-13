@@ -140,7 +140,7 @@ Health check endpoint:
 ```json
 {
   "status": "ok",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "editor": "code"
 }
 ```
@@ -152,20 +152,46 @@ The plugin uses the `launch-editor` package which:
 1. Scans running processes to detect editors
 2. Uses the detected editor's CLI command
 3. Handles platform-specific differences (macOS, Windows, Linux, WSL)
-4. Falls back to the configured editor if auto-detection fails
+
+## Which editor is used
+
+In priority order:
+
+1. The request's `?editor=` parameter
+2. `withInspector(config, { editor: 'cursor' })` in `metro.config.js`
+3. The `LAUNCH_EDITOR` or `REACT_EDITOR` environment variable
+4. Auto-detection from running processes
+
+An editor configured in `metro.config.js` wins over the environment, so a stray
+`EDITOR` / `REACT_EDITOR` in your shell cannot silently override the project's
+choice.
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `LAUNCH_EDITOR` | Override editor (highest priority) |
-| `REACT_EDITOR` | Override editor (used by CRA/Vite) |
+| `LAUNCH_EDITOR` | Override editor, when none is set in `metro.config.js` |
+| `REACT_EDITOR` | Same, using the name CRA/Vite established |
+
+These must be set in the shell that starts Metro. Launching Metro from a GUI app
+can give it a different environment than your terminal.
 
 ## Troubleshooting
 
+### Is the middleware even installed?
+
+```bash
+curl http://localhost:8081/__rn_dev_inspector__/status
+# {"status":"ok","version":"1.2.0","editor":"code"}
+```
+
+A 404 means `withInspector()` isn't applied in `metro.config.js`, or Metro
+wasn't restarted after you added it.
+
 ### Editor Not Opening
 
-Check the Metro logs for errors:
+Failures are logged to the Metro console with the underlying error. Check there
+first:
 
 ```bash
 npx react-native start --verbose

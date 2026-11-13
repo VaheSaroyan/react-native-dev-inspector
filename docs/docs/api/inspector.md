@@ -36,7 +36,7 @@ import { Inspector } from 'react-native-dev-inspector';
 | `children` | `ReactNode` | Required | Your app content to wrap |
 | `disabled` | `boolean` | `false` | Completely disable the inspector |
 | `editor` | `string` | - | Editor command (e.g., `'code'`, `'cursor'`, `'webstorm'`) |
-| `devServerUrl` | `string` | Auto-detect | Metro dev server URL. Defaults to `localhost:8081` (iOS) or `10.0.2.2:8081` (Android) |
+| `devServerUrl` | `string` | Auto-detect | Metro dev server URL. Defaults to the host that served the JS bundle, so physical devices and LAN/tunnel setups work without configuration. Falls back to `localhost:8081` (iOS) / `10.0.2.2:8081` (Android) |
 | `addToDevMenu` | `boolean` | `true` | Add "Toggle Dev Inspector" to React Native dev menu |
 | `onInspectorEnabled` | `() => void` | - | Called when inspector is enabled |
 | `onInspectorDisabled` | `() => void` | - | Called when inspector is disabled |

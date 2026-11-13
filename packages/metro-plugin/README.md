@@ -1,6 +1,8 @@
 # @rn-dev-inspector/metro-plugin
 
-Metro middleware and Babel plugin for React Native Dev Inspector - enables opening source files in your editor with precise source tracking.
+Metro dev-server middleware for React Native Dev Inspector - handles the "Open in Editor" requests sent by the inspector running in your app.
+
+Source tracking itself is done by a separate package, [`@rn-dev-inspector/babel-plugin`](../babel-plugin).
 
 ## Installation
 
@@ -11,7 +13,6 @@ npm install @rn-dev-inspector/metro-plugin
 ## Features
 
 - **Metro Middleware**: Handles "Open in Editor" requests from the inspector
-- **Babel Plugin**: Injects source location info into JSX for precise tracking
 - **Cross-platform**: Works on macOS, Windows, and Linux
 - **Editor Auto-detection**: Automatically detects your running editor
 
@@ -35,52 +36,37 @@ module.exports = withInspector(config, {
 });
 ```
 
-### 2. Babel Plugin (Optional but Recommended)
+### 2. Babel Plugin
 
-For precise source tracking, add the babel plugin to your `babel.config.js`:
+Source locations come from `@rn-dev-inspector/babel-plugin`, which is a separate
+package. Install it and add it to `babel.config.js`:
+
+```bash
+npm install --save-dev @rn-dev-inspector/babel-plugin
+```
 
 ```js
 // babel.config.js
-const { inspectorBabelPlugin } = require('@rn-dev-inspector/metro-plugin');
-
 module.exports = function (api) {
   api.cache(true);
   return {
     presets: ['babel-preset-expo'], // or your existing presets
     plugins: [
-      inspectorBabelPlugin,
+      '@rn-dev-inspector/babel-plugin',
       // ... other plugins
     ],
   };
 };
 ```
 
-The babel plugin injects `__callerSource` props into JSX elements:
+Restart Metro with a cleared cache after changing babel config:
 
-```tsx
-// Before transformation
-<View style={styles.container}>
-  <Text>Hello</Text>
-</View>
-
-// After transformation
-<View style={styles.container} __callerSource={{ fileName: "/path/to/file.tsx", lineNumber: 10, columnNumber: 3 }}>
-  <Text __callerSource={{ fileName: "/path/to/file.tsx", lineNumber: 11, columnNumber: 5 }}>Hello</Text>
-</View>
+```bash
+npx expo start --clear       # Expo
+npx react-native start --reset-cache  # React Native CLI
 ```
 
-### Babel Plugin Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `userComponentsOnly` | `boolean` | `false` | Only inject into user components (skip native View/Text) |
-
-```js
-// Only inject into custom components
-plugins: [
-  [inspectorBabelPlugin, { userComponentsOnly: true }],
-],
-```
+See the [babel plugin README](../babel-plugin) for its options.
 
 ## Metro Options
 
@@ -115,9 +101,13 @@ The plugin uses [`launch-editor`](https://github.com/yyx990803/launch-editor) fo
 
 Priority order:
 1. Request parameter: `?editor=cursor`
-2. Environment variable: `LAUNCH_EDITOR` or `REACT_EDITOR`
-3. Plugin option: `{ editor: 'cursor' }`
+2. Plugin option: `withInspector(config, { editor: 'cursor' })`
+3. Environment variable: `LAUNCH_EDITOR` or `REACT_EDITOR`
 4. Auto-detect from running processes
+
+An editor configured in `metro.config.js` takes precedence over the environment,
+so a stray `EDITOR`/`REACT_EDITOR` in your shell cannot silently override the
+project's choice.
 
 ```bash
 # Set via environment variable
@@ -169,7 +159,7 @@ Check plugin status and configured editor.
 ```json
 {
   "status": "ok",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "editor": "code"
 }
 ```
@@ -182,7 +172,6 @@ You can also use the functions directly:
 const {
   openInEditor,
   createInspectorMiddleware,
-  inspectorBabelPlugin,
 } = require('@rn-dev-inspector/metro-plugin');
 
 // Open a file directly
@@ -194,14 +183,8 @@ await openInEditor({
   editor: 'code',
 });
 
-// Create middleware for custom server
+// Create middleware for a custom server
 const middleware = createInspectorMiddleware({ editor: 'code' });
-
-// Use babel plugin programmatically
-// babel.config.js
-module.exports = {
-  plugins: [inspectorBabelPlugin],
-};
 ```
 
 ## How It Works

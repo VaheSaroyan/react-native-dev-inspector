@@ -29,11 +29,10 @@ import {
   type Fiber,
   type InspectInfo,
   type CodeInfo,
-  getCodeInfoFromFiber,
   getFiberName,
-  isUserComponent,
+  parseTestIdForSource,
 } from './fiber';
-import { launchEditor } from './editor';
+import { launchEditor, getLastLaunchFailureReason } from './editor';
 import { registerDevMenuToggle } from './devMenuIntegration';
 
 // Types for React Native's internal inspector API
@@ -154,107 +153,6 @@ interface SelectedElement {
   closestInstance: any;
 }
 
-// Helper to find user component from fiber
-function findUserComponentFromFiber(fiber: Fiber | null): InspectInfo | null {
-  let current = fiber;
-
-  while (current) {
-    const componentName = getFiberName(current);
-
-    if (SKIP_COMPONENT_NAMES.has(componentName)) {
-      current = current.return;
-      continue;
-    }
-
-    const codeInfo = getCodeInfoFromFiber(current);
-
-    if (codeInfo && isUserComponent(current)) {
-      return { fiber: current, codeInfo, name: componentName };
-    }
-
-    if (current._debugOwner) {
-      const ownerName = getFiberName(current._debugOwner);
-      if (!SKIP_COMPONENT_NAMES.has(ownerName)) {
-        const ownerCodeInfo = getCodeInfoFromFiber(current._debugOwner);
-        if (ownerCodeInfo && isUserComponent(current._debugOwner)) {
-          return { fiber: current._debugOwner, codeInfo: ownerCodeInfo, name: ownerName };
-        }
-      }
-    }
-
-    current = current.return;
-  }
-
-  return null;
-}
-
-/**
- * Parse testID in format: ComponentName@file:line:column
- * Example: "CustomButton@components/Button.tsx:25:5"
- * Returns null if testID doesn't match the expected format
- */
-function parseTestIdForSource(testId: string): CodeInfo | null {
-  if (!testId || typeof testId !== 'string') return null;
-
-  // Match pattern: ComponentName@path/to/file.tsx:line:column
-  const match = testId.match(/^([^@]+)@(.+):(\d+):(\d+)$/);
-  if (!match) return null;
-
-  const [, componentName, relativePath, lineStr, columnStr] = match;
-  const lineNumber = parseInt(lineStr, 10);
-  const columnNumber = parseInt(columnStr, 10);
-
-  if (isNaN(lineNumber) || isNaN(columnNumber)) return null;
-
-  return {
-    relativePath,
-    lineNumber,
-    columnNumber,
-    componentName,
-  };
-}
-
-// Get the call site location (where a component is USED, not where it's DEFINED)
-// This walks up from a fiber to find where it was instantiated
-function getCallSiteInfo(fiber: Fiber): CodeInfo | null {
-  const props = fiber.memoizedProps || {};
-
-  // First check: testID with source info (format: ComponentName@file:line:column)
-  // This is the preferred method as it works reliably with our babel plugin
-  const testId = props.testID;
-  if (testId) {
-    const parsed = parseTestIdForSource(testId);
-    if (parsed) {
-      return parsed;
-    }
-  }
-
-  // Second check: the fiber's own _debugSource (where this element was created in JSX)
-  if (fiber._debugSource) {
-    const source = fiber._debugSource;
-    return {
-      relativePath: source.fileName,
-      lineNumber: source.lineNumber,
-      columnNumber: source.columnNumber ?? 1,
-      componentName: getFiberName(fiber),
-    };
-  }
-
-  // Third check: _debugOwner points to the component that rendered this fiber
-  // Its _debugSource tells us where the JSX element was written
-  if (fiber._debugOwner && fiber._debugOwner._debugSource) {
-    const source = fiber._debugOwner._debugSource;
-    return {
-      relativePath: source.fileName,
-      lineNumber: source.lineNumber,
-      columnNumber: source.columnNumber ?? 1,
-      componentName: getFiberName(fiber),
-    };
-  }
-
-  return null;
-}
-
 // Check if a component name is a user component (starts with uppercase, not a native component)
 function isUserComponentName(name: string): boolean {
   if (!name) return false;
@@ -362,7 +260,15 @@ function buildHierarchy(viewData: TouchedViewDataAtPoint): HierarchyItem[] {
         const data = item.getInspectorData(findNodeHandle);
         const testID = data.props?.testID;
         const callerSource = data.props?.__callerSource;
-        const parsed = testID ? parseTestIdForSource(testID) : null;
+        // testID may have been set by the user for automation, in which case it
+        // won't parse. __callerSource and dataInspectorSource are only ever
+        // written by the babel plugin, so they are reliable fallbacks.
+        const parsed =
+          (testID ? parseTestIdForSource(testID) : null) ??
+          (callerSource ? parseTestIdForSource(callerSource) : null) ??
+          (data.props?.dataInspectorSource
+            ? parseTestIdForSource(data.props.dataInspectorSource)
+            : null);
 
         // For user components, walk up the fiber tree to find the actual user component fiber
         // which has the __callerSource prop injected by the babel plugin
@@ -713,7 +619,8 @@ const InspectorPanel: React.FC<{
   onClose: () => void;
   panelPosition: 'top' | 'bottom';
   frame: { x: number; y: number; width: number; height: number } | null;
-}> = ({ hierarchy, selectedIndex, onSelectIndex, onOpenEditor, onClose, panelPosition, frame }) => {
+  openError?: string | null;
+}> = ({ hierarchy, selectedIndex, onSelectIndex, onOpenEditor, onClose, panelPosition, frame, openError }) => {
   const selectedItem = hierarchy[selectedIndex];
   const scrollViewRef = React.useRef<ScrollView>(null);
 
@@ -815,6 +722,12 @@ const InspectorPanel: React.FC<{
                 <Text style={styles.openEditorText}>→ Open</Text>
               </TouchableOpacity>
             )}
+
+            {openError && (
+              <Text style={styles.openErrorText} numberOfLines={2}>
+                {openError} — see the Metro console for setup steps.
+              </Text>
+            )}
           </View>
         )}
 
@@ -847,6 +760,7 @@ export const Inspector: React.FC<InspectorProps> = ({
     closestInstance: null,
   });
   const [panelPosition, setPanelPosition] = useState<'top' | 'bottom'>('bottom');
+  const [openError, setOpenError] = useState<string | null>(null);
 
   const contentViewRef = useRef<View | null>(null);
   const { height: screenHeight } = Dimensions.get('window');
@@ -886,7 +800,13 @@ export const Inspector: React.FC<InspectorProps> = ({
   }, [addToDevMenu, disabled]);
 
   const openEditor = useCallback((codeInfo: CodeInfo) => {
-    launchEditor({ codeInfo, editor, devServerUrl });
+    setOpenError(null);
+    launchEditor({ codeInfo, editor, devServerUrl }).then((ok) => {
+      if (!ok) {
+        // launchEditor already logged the full checklist; show a short hint here.
+        setOpenError(getLastLaunchFailureReason() ?? 'Could not open in editor');
+      }
+    });
   }, [editor, devServerUrl]);
 
   const inspectAtPoint = useCallback((x: number, y: number) => {
@@ -976,6 +896,7 @@ export const Inspector: React.FC<InspectorProps> = ({
   }, [selectedElement, onElementTapped, openEditor]);
 
   const handleSelectIndex = useCallback((index: number) => {
+    setOpenError(null);
     setSelectedElement(prev => ({ ...prev, selectedIndex: index }));
   }, []);
 
@@ -1031,6 +952,7 @@ export const Inspector: React.FC<InspectorProps> = ({
                 onClose={disableInspector}
                 panelPosition={panelPosition}
                 frame={selectedElement.frame}
+                openError={openError}
               />
             )}
           </>
@@ -1172,6 +1094,11 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
     fontStyle: 'italic',
+  },
+  openErrorText: {
+    color: '#ff6b6b',
+    fontSize: 11,
+    marginTop: 4,
   },
   closeButton: {
     position: 'absolute',

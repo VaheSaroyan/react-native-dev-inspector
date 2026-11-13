@@ -1,6 +1,6 @@
 {
   "name": "@rn-dev-inspector/core",
-  "version": "1.0.5",
+  "version": "1.2.0",
   "description": "Core inspector component for React Native Dev Inspector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +36,6 @@
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
-    "@types/react-native": "^0.72.0",
     "react": "^18.2.0",
     "react-native": "^0.73.0"
   }

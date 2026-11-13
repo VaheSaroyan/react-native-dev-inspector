@@ -22,6 +22,11 @@ export interface ExpoPluginOptions {
 
 const pkg = require('../package.json');
 
+/** Print an actionable setup warning during prebuild. */
+function warn(message: string): void {
+  console.warn(`\n[@rn-dev-inspector/expo-plugin] ${message}\n`);
+}
+
 /**
  * Expo config plugin for React Native Dev Inspector
  *
@@ -100,6 +105,19 @@ async function ensureBabelConfig(projectRoot: string, excludes: (string | RegExp
     return;
   }
 
+  // We deliberately do not rewrite an existing babel config: parsing and
+  // editing arbitrary JS is unreliable and easy to get wrong. Tell the
+  // developer exactly what to add instead of failing silently.
+  warn(
+    `babel.config.js exists but does not include the inspector babel plugin.\n` +
+      `Without it the inspector cannot resolve source locations.\n` +
+      `Add it to the "plugins" array in ${babelConfigPath}:\n\n` +
+      `  plugins: [\n` +
+      `    '@rn-dev-inspector/babel-plugin',\n` +
+      `    // 'react-native-reanimated/plugin' must stay last, if you use it\n` +
+      `  ],\n\n` +
+      `Then restart Metro with a cleared cache: npx expo start --clear`
+  );
 }
 
 /**
@@ -132,6 +150,14 @@ module.exports = withInspector(config, {
     return;
   }
 
+  warn(
+    `metro.config.js exists but does not wrap the config with withInspector().\n` +
+      `Without it, "Open in Editor" has no dev-server endpoint to call.\n` +
+      `Update ${metroConfigPath}:\n\n` +
+      `  const { withInspector } = require('@rn-dev-inspector/metro-plugin');\n` +
+      `  module.exports = withInspector(config, { editor: '${editor}' });\n\n` +
+      `Then restart Metro.`
+  );
 }
 
 export default createRunOncePlugin(withDevInspector, pkg.name, pkg.version);

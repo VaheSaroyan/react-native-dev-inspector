@@ -7,7 +7,7 @@
  * - /__open-stack-frame-in-editor (legacy)
  */
 
-import {Platform, Linking} from 'react-native';
+import {Platform, Linking, NativeModules} from 'react-native';
 import type {CodeInfo} from './fiber';
 
 export interface LaunchEditorOptions {
@@ -20,14 +20,43 @@ export interface LaunchEditorOptions {
 }
 
 /**
- * Default dev server URL based on platform
+ * Resolve the dev server from the bundle URL that Metro served this JS from.
+ *
+ * This is the only reliable source: on a physical device, over LAN, with a
+ * tunnel, or on a non-default port, the dev server is not on localhost. The
+ * bundle URL always points at whichever host actually served the bundle.
+ */
+function getDevServerUrlFromScriptUrl(): string | null {
+  try {
+    const scriptURL: unknown = NativeModules?.SourceCode?.getConstants
+      ? NativeModules.SourceCode.getConstants().scriptURL
+      : NativeModules?.SourceCode?.scriptURL;
+
+    if (typeof scriptURL !== 'string' || !scriptURL) return null;
+
+    // e.g. "http://192.168.1.20:8081/index.bundle?platform=ios&dev=true"
+    const match = scriptURL.match(/^(https?:\/\/[^/]+)/);
+    return match ? match[1] : null;
+  } catch {
+    // SourceCode is unavailable in some runtimes (e.g. tests, web)
+    return null;
+  }
+}
+
+/**
+ * Default dev server URL.
+ * Prefers the host that actually served the bundle, then falls back to the
+ * platform's conventional simulator/emulator address.
  */
 function getDefaultDevServerUrl(): string {
+  const fromScript = getDevServerUrlFromScriptUrl();
+  if (fromScript) return fromScript;
+
   if (Platform.OS === 'android') {
-    // Android emulator uses 10.0.2.2 for localhost
+    // Android emulator maps the host machine's localhost to 10.0.2.2
     return 'http://10.0.2.2:8081';
   }
-  // iOS simulator uses localhost
+  // iOS simulator shares the host's localhost
   return 'http://localhost:8081';
 }
 
@@ -73,10 +102,40 @@ export async function launchEditorViaInspector(
       method: 'GET',
     });
 
-    return response.ok;
-  } catch {
+    if (!response.ok) {
+      lastFailureReason = await describeFailedResponse(response, url);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    lastFailureReason =
+      `could not reach the dev server at ${baseUrl} ` +
+      `(${error instanceof Error ? error.message : 'network error'})`;
     return false;
   }
+}
+
+/** Reason the most recent launch attempt failed, for diagnostics. */
+let lastFailureReason: string | null = null;
+
+/** Read the metro middleware's JSON error body, if it sent one. */
+async function describeFailedResponse(response: Response, url: string): Promise<string> {
+  try {
+    const body = await response.text();
+    try {
+      const parsed = JSON.parse(body);
+      if (parsed && typeof parsed.error === 'string') {
+        return parsed.error;
+      }
+    } catch {
+      // not JSON
+    }
+    if (body) return `${response.status} from ${url}: ${body.slice(0, 200)}`;
+  } catch {
+    // body already consumed or unreadable
+  }
+  return `${response.status} from ${url}`;
 }
 
 /**
@@ -193,6 +252,8 @@ export async function launchEditorViaUrlScheme(options: LaunchEditorOptions): Pr
 export async function launchEditor(
   options: LaunchEditorOptions,
 ): Promise<boolean> {
+  lastFailureReason = null;
+
   // Try standard inspector endpoint first (react-dev-inspector compatible)
   const inspectorSuccess = await launchEditorViaInspector(options);
   if (inspectorSuccess) {
@@ -211,7 +272,30 @@ export async function launchEditor(
     return true;
   }
 
+  if (__DEV__) {
+    const baseUrl = options.devServerUrl || getDefaultDevServerUrl();
+    console.warn(
+      `[react-native-dev-inspector] Could not open ` +
+        `${options.codeInfo.relativePath}:${options.codeInfo.lineNumber} in your editor.\n` +
+        (lastFailureReason ? `Reason: ${lastFailureReason}\n` : '') +
+        `Checklist:\n` +
+        `  1. Add withInspector(...) from @rn-dev-inspector/metro-plugin to metro.config.js, ` +
+        `then restart Metro.\n` +
+        `  2. Make sure your editor's CLI is on PATH, or set REACT_EDITOR ` +
+        `(e.g. export REACT_EDITOR=code) in the shell running Metro.\n` +
+        `  3. Dev server used: ${baseUrl} — pass devServerUrl to <Inspector> if that is wrong.`,
+    );
+  }
+
   return false;
+}
+
+/**
+ * Why the most recent launchEditor() call failed, or null if it succeeded.
+ * Useful for surfacing an error in your own UI.
+ */
+export function getLastLaunchFailureReason(): string | null {
+  return lastFailureReason;
 }
 
 /**

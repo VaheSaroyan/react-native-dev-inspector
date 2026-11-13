@@ -1,6 +1,6 @@
 {
   "name": "@rn-dev-inspector/expo-plugin",
-  "version": "1.0.5",
+  "version": "1.2.0",
   "description": "Expo config plugin for React Native Dev Inspector",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -36,7 +36,8 @@
     "expo": ">=47.0.0"
   },
   "dependencies": {
-    "@rn-dev-inspector/babel-plugin": "workspace:*"
+    "@rn-dev-inspector/babel-plugin": "workspace:*",
+    "@rn-dev-inspector/metro-plugin": "workspace:*"
   },
   "devDependencies": {
     "@expo/config-plugins": "^7.0.0",

@@ -34,14 +34,18 @@ export interface OpenFileRequest {
 
 /**
  * Get the editor to use based on options and environment
- * Priority: request > LAUNCH_EDITOR env > REACT_EDITOR env > options > auto-detect
+ * Priority: request > withInspector({ editor }) > LAUNCH_EDITOR > REACT_EDITOR > auto-detect
+ *
+ * An editor configured explicitly in metro.config.js wins over the ambient
+ * environment, so a stray `EDITOR`/`REACT_EDITOR` in the developer's shell
+ * cannot silently override the project's choice.
  */
 function getEditor(options: MetroPluginOptions, requestEditor?: string): string | undefined {
   return (
     requestEditor ||
+    options.editor ||
     process.env.LAUNCH_EDITOR ||
-    process.env.REACT_EDITOR ||
-    options.editor
+    process.env.REACT_EDITOR
     // If undefined, launch-editor will auto-detect from running processes
   );
 }
@@ -111,9 +115,16 @@ export async function openInEditor(
         (fileName: string, errorMsg: string | null) => {
           const errorMessage = errorMsg || 'Unknown error launching editor';
 
-          // Call custom error handler if provided
+          // Call custom error handler if provided, otherwise make the failure
+          // visible — this callback can fire after we have already responded.
           if (options.onError) {
             options.onError(fileName, errorMessage);
+          } else {
+            console.error(
+              `[rn-dev-inspector] Failed to open ${fileName}: ${errorMessage}\n` +
+                `Set REACT_EDITOR (e.g. export REACT_EDITOR=code) or pass ` +
+                `{ editor: 'code' } to withInspector() in metro.config.js.`
+            );
           }
 
           resolve({
@@ -136,6 +147,16 @@ export async function openInEditor(
       });
     }
   });
+}
+
+/** Version of this package, reported by the status endpoint. */
+function getPackageVersion(): string {
+  try {
+    // dist/index.js -> package.json
+    return require('../package.json').version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
 }
 
 // Standard endpoints (compatible with react-dev-inspector)
@@ -244,7 +265,7 @@ export function createInspectorMiddleware(options: MetroPluginOptions = {}) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         status: 'ok',
-        version: '1.0.0',
+        version: getPackageVersion(),
         editor: editor || 'auto-detect',
       }));
       return;

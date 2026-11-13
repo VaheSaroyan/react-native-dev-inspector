@@ -1,6 +1,3 @@
-// Import the inspector babel plugin
-const { inspectorBabelPlugin } = require('react-native-dev-inspector/metro');
-
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -9,8 +6,9 @@ module.exports = function (api) {
       'nativewind/babel',
     ],
     plugins: [
-      // Inspector plugin - injects source location info for "Open in Editor" feature
-      inspectorBabelPlugin,
+      // Injects source location info for the "Open in Editor" feature.
+      // Must come before reanimated's plugin, which has to stay last.
+      '@rn-dev-inspector/babel-plugin',
       'react-native-reanimated/plugin',
     ],
   };

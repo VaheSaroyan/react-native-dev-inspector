@@ -19,6 +19,7 @@ export {
   findFirstUserComponentWithSource,
   getFiberName,
   getCodeInfoFromFiber,
+  parseTestIdForSource,
   isUserComponent,
   isHostComponent,
   getFiberStack,
@@ -34,6 +35,7 @@ export {
   launchEditorViaMetro,
   launchEditorViaUrlScheme,
   checkDevServer,
+  getLastLaunchFailureReason,
 } from './editor';
 export type { LaunchEditorOptions } from './editor';
 

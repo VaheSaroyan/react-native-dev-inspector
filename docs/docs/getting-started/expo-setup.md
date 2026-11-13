@@ -4,13 +4,23 @@ sidebar_position: 2
 
 # Expo Setup
 
-Setting up React Native Dev Inspector with Expo is straightforward using our config plugin.
+Setting up React Native Dev Inspector with Expo takes three pieces of config.
+The optional config plugin can scaffold two of them for you.
 
 ## Step 1: Install Packages
 
 ```bash
-npx expo install react-native-dev-inspector @rn-dev-inspector/expo-plugin
+npx expo install react-native-dev-inspector
+npm install --save-dev @rn-dev-inspector/babel-plugin
+
+# optional: the prebuild setup helper
+npm install --save-dev @rn-dev-inspector/expo-plugin
 ```
+
+:::info
+`@rn-dev-inspector/babel-plugin` is required. The config plugin writes it into
+your babel config but does not replace it as a dependency.
+:::
 
 ## Step 2: Add Config Plugin
 
@@ -76,12 +86,19 @@ npx expo run:android
 
 ## What the Plugin Does
 
-The Expo plugin automatically:
+The Expo plugin runs during `expo prebuild` and:
 
-1. **Configures Babel**: Adds `@rn-dev-inspector/babel-plugin` to your `babel.config.js`
-2. **Configures Metro**: Adds the inspector middleware to `metro.config.js`
+1. **Configures Babel**: creates `babel.config.js` with `@rn-dev-inspector/babel-plugin`, if that file doesn't exist yet
+2. **Configures Metro**: creates `metro.config.js` with the inspector middleware, if that file doesn't exist yet
 
-If these files already exist, the plugin will warn you to add the configuration manually.
+If those files already exist it will **not** rewrite them — it prints the exact
+lines to add and you apply them yourself.
+
+:::caution It only runs during prebuild
+The config plugin does nothing in a managed workflow that never prebuilds. If
+you aren't running `expo prebuild`, use the manual configuration below — it is
+the reliable path, and the plugin is only a convenience on top of it.
+:::
 
 ## Manual Configuration
 
@@ -114,12 +131,25 @@ module.exports = withInspector(config, {
 });
 ```
 
-## Expo Go Limitations
+## Expo Go
 
-The inspector works best with development builds (`expo run:ios` / `expo run:android`). In Expo Go:
+The inspector works in Expo Go. Both the babel plugin and the Metro middleware
+come from your own project's `babel.config.js` and `metro.config.js`, which Expo
+Go uses when it loads your bundle from your dev server — so "Open in Editor"
+reaches your machine normally.
 
-- The babel plugin works
-- Metro middleware won't be available
-- Editor launching falls back to URL schemes
+Two things to keep in mind:
 
-For the best experience, use development builds.
+- Your device and the machine running Metro must be able to reach each other.
+  The inspector targets the host that served the bundle, so this works over LAN
+  and tunnels without extra configuration.
+- Development builds (`expo run:ios` / `expo run:android`) still give a better
+  dev-menu experience, and are required if you add any custom native code.
+
+## Restart Metro after changing config
+
+Babel config is cached, so after the first setup:
+
+```bash
+npx expo start --clear
+```

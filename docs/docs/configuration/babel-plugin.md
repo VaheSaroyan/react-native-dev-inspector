@@ -67,31 +67,49 @@ Patterns for files to exclude from processing. Files matching these patterns won
 }
 ```
 
-### `attributePrefix`
+### `injectTestId`
 
-- **Type**: `string`
-- **Default**: `'data-inspector'`
+- **Type**: `boolean`
+- **Default**: `true`
 
-The prefix for the injected attributes.
+Whether to set `testID` to the source location. The plugin never replaces a
+`testID` you wrote yourself, but if you'd rather it left `testID` alone
+entirely, set this to `false` — `dataInspectorSource` still carries the source
+information, so the inspector keeps working.
 
 ```js
 {
-  attributePrefix: 'data-debug'
+  injectTestId: false
+}
+```
+
+### `enabled`
+
+- **Type**: `boolean`
+- **Default**: `false` when Babel's env is `production`, otherwise `true`
+
+Whether the plugin runs at all. By default it is off in production builds so
+source paths are never shipped to users. Set it explicitly to override.
+
+```js
+{
+  enabled: true // inject even in production (not recommended)
 }
 ```
 
 ## How It Works
 
-The plugin transforms JSX elements by adding data attributes containing source location:
+Source locations are encoded as a single string, `ComponentName@file:line:column`,
+and attached through up to three props.
 
 ### Before
 
 ```tsx
-function MyComponent() {
+function CustomButton({ title }) {
   return (
-    <View>
-      <Text>Hello</Text>
-    </View>
+    <TouchableOpacity>
+      <Text>{title}</Text>
+    </TouchableOpacity>
   );
 }
 ```
@@ -99,34 +117,45 @@ function MyComponent() {
 ### After
 
 ```tsx
-function MyComponent() {
+function CustomButton({ title, __callerSource }) {
   return (
-    <View
-      data-inspector-file="src/MyComponent.tsx"
-      data-inspector-line="3"
-      data-inspector-column="5"
-      data-inspector-component="View"
+    <TouchableOpacity
+      dataInspectorSource="TouchableOpacity@src/CustomButton.tsx:3:5"
+      testID={__callerSource || "TouchableOpacity@src/CustomButton.tsx:3:5"}
     >
       <Text
-        data-inspector-file="src/MyComponent.tsx"
-        data-inspector-line="4"
-        data-inspector-column="7"
-        data-inspector-component="Text"
+        dataInspectorSource="Text@src/CustomButton.tsx:4:7"
+        testID="Text@src/CustomButton.tsx:4:7"
       >
-        Hello
+        {title}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 ```
 
+### The injected props
+
+| Prop | Added to | Purpose |
+|------|----------|---------|
+| `dataInspectorSource` | every element | Where this element is written. Always added, never overwritten, so it stays correct even when you set your own `testID`. |
+| `__callerSource` | your own components | Where the component is **used**. Lets the inspector jump to the call site rather than the definition. |
+| `testID` | elements without one | The same source string. On a component's root element it forwards `__callerSource` when the parent supplied one. Disable with `injectTestId: false`. |
+
+Components wrapped in `forwardRef()` and `memo()` are recognised, so their call
+sites are forwarded too.
+
 ## Production Builds
 
-The babel plugin only adds attributes in development. In production builds:
+The plugin is **disabled by default when Babel's env is `production`**, so:
 
-- The plugin still runs but the attributes are stripped by React Native's production optimizations
-- Zero runtime overhead in production
-- No source paths leaked to production builds
+- No source paths are injected into release bundles
+- No extra props are added, so there is no runtime or bundle-size cost
+- Nothing about your file structure is leaked to users
+
+Nothing strips these props automatically, so this guard is what keeps them out
+of release builds. If you override it with `enabled: true`, your source paths
+*will* ship. Verify with a release build if it matters to you.
 
 ## Performance
 
@@ -147,12 +176,20 @@ The plugin is designed to be fast:
 
 ### Conflicting With Other Plugins
 
-The inspector plugin should generally be listed last in your plugins array to avoid conflicts:
+Some plugins require a specific position. `react-native-reanimated/plugin` must
+be **last**, so place the inspector plugin before it:
 
 ```js
 plugins: [
   'other-plugin',
-  'another-plugin',
-  '@rn-dev-inspector/babel-plugin', // Last
+  '@rn-dev-inspector/babel-plugin',
+  'react-native-reanimated/plugin', // must stay last
 ]
+```
+
+Remember to restart Metro with a cleared cache after any babel config change:
+
+```bash
+npx expo start --clear                 # Expo
+npx react-native start --reset-cache   # React Native CLI
 ```
