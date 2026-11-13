@@ -244,8 +244,7 @@ function isProjectSourceFiber(fiber) {
   return !String(parsed.fileName).includes('node_modules');
 }
 
-// Library/wrapper component names (mirrors BUSINESS_SKIP_NAMES from
-// patch-core.js patch 7). Some wrappers still get instantiated in business
+// Some library wrappers still get instantiated in business
 // JSX (e.g. nativewind's styled(Pressable), written on a button.tsx render
 // line, so the fiber carries __callerSource) and a path check would mistake
 // them for business source — filter them out by name as a fallback;

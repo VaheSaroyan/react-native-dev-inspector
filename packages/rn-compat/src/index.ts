@@ -72,7 +72,7 @@ interface MetroConfigLike {
 /**
  * Probe the project's react-native for the real getInspectorDataForViewAtPoint
  * implementation, by priority:
- *   0.81+ : src/private/devsupport/devmenu/elementinspector/...
+ *   0.82+ : src/private/devsupport/devmenu/elementinspector/...
  *   <=0.80: Libraries/Inspector/...
  *
  * Walks up from `root` (node resolution style) so a monorepo app whose
@@ -82,10 +82,9 @@ interface MetroConfigLike {
  */
 function findRealImpl(root: string): string | null {
   // Derived from the intercepted module specifiers above so the two stay in sync
-  const candidates = [
-    `node_modules/${PRIVATE_082}.js`,
-    `node_modules/${PUBLIC_LE080}.js`,
-  ];
+  const candidates = [PRIVATE_082, PUBLIC_LE080].map(
+    moduleName => `node_modules/${moduleName}.js`
+  );
   let dir = path.resolve(root);
   for (;;) {
     for (const rel of candidates) {
