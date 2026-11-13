@@ -74,6 +74,11 @@ interface MetroConfigLike {
  * implementation, by priority:
  *   0.81+ : src/private/devsupport/devmenu/elementinspector/...
  *   <=0.80: Libraries/Inspector/...
+ *
+ * Walks up from `root` (node resolution style) so a monorepo app whose
+ * react-native is hoisted into a workspace root's node_modules is found too;
+ * in that case the impl package lives outside the project root and must be
+ * added to watchFolders separately (see withInspectorCompat).
  */
 function findRealImpl(root: string): string | null {
   // Derived from the intercepted module specifiers above so the two stay in sync
@@ -81,11 +86,17 @@ function findRealImpl(root: string): string | null {
     `node_modules/${PRIVATE_082}.js`,
     `node_modules/${PUBLIC_LE080}.js`,
   ];
-  for (const rel of candidates) {
-    const p = path.join(root, rel);
-    if (fs.existsSync(p)) return p;
+  let dir = path.resolve(root);
+  for (;;) {
+    for (const rel of candidates) {
+      const p = path.join(dir, rel);
+      if (fs.existsSync(p)) return p;
+    }
+    const parent = path.dirname(dir);
+    // Reached the filesystem root without a hit
+    if (parent === dir) return null;
+    dir = parent;
   }
-  return null;
 }
 
 /**
@@ -94,6 +105,13 @@ function findRealImpl(root: string): string | null {
  *   real implementation internally)
  * - intercept the marker module name -> real implementation file
  * - all other requests continue with the original resolveRequest (if any)
+ *
+ * Never throws and never mutates the input config: the returned object is a
+ * shallow copy, so it composes safely
+ * (`withInspector(withInspectorCompat(config))`). When the react-native
+ * implementation cannot be located it warns and returns the config with the
+ * compat resolver omitted — a broken integration must not take down the
+ * entire bundler.
  */
 export function withInspectorCompat<T extends MetroConfigLike = MetroConfigLike>(
   config: T,
@@ -104,12 +122,17 @@ export function withInspectorCompat<T extends MetroConfigLike = MetroConfigLike>
   const root = options.root || config.projectRoot || process.cwd();
   const realImpl = findRealImpl(root);
   if (!realImpl) {
-    throw new Error(
-      '@rn-dev-inspector/rn-compat: could not find the react-native ' +
-        'getInspectorDataForViewAtPoint implementation under ' +
+    // Degrade instead of throwing: without the real implementation the shim
+    // cannot resolve back to RN's own code, so compat interception is skipped
+    // entirely and the bundler keeps working with the stock inspector.
+    console.warn(
+      '[rn-dev-inspector] @rn-dev-inspector/rn-compat: could not find the ' +
+        'react-native getInspectorDataForViewAtPoint implementation under ' +
         root +
-        '; make sure root points to the project directory.'
+        ' — skipping the compat resolver. Pass { root } if your project ' +
+        'root is not where react-native is installed.'
     );
+    return { ...config };
   }
   // After compilation this file lives in dist/; the shim is in the package
   // root's shims/ directory
@@ -149,27 +172,32 @@ export function withInspectorCompat<T extends MetroConfigLike = MetroConfigLike>
     pkgRoot,
     ...(implOutsideProject ? [implPkgRoot![0]] : []),
   ];
-  config.watchFolders = [
-    ...new Set([...(config.watchFolders || []), ...extraWatch]),
-  ];
 
-  config.resolver = {
-    ...(config.resolver || {}),
-    resolveRequest(context, moduleName, platform) {
-      if (moduleName === PRIVATE_082 || moduleName === PUBLIC_LE080) {
-        return { type: 'sourceFile', filePath: shimPath };
-      }
-      if (moduleName === MARKER) {
-        return { type: 'sourceFile', filePath: realImpl };
-      }
-      if (OPTIONAL_PEERS.includes(moduleName) && !isInstalled(moduleName)) {
-        return { type: 'sourceFile', filePath: emptyModulePath };
-      }
-      if (prev) return prev(context, moduleName, platform);
-      return context.resolveRequest(context, moduleName, platform);
+  // Build a new config object instead of mutating the input, so wrapping is
+  // idempotent-safe and composes with other with* helpers
+  const nextConfig: T = {
+    ...config,
+    watchFolders: [
+      ...new Set([...(config.watchFolders || []), ...extraWatch]),
+    ],
+    resolver: {
+      ...(config.resolver || {}),
+      resolveRequest(context, moduleName, platform) {
+        if (moduleName === PRIVATE_082 || moduleName === PUBLIC_LE080) {
+          return { type: 'sourceFile', filePath: shimPath };
+        }
+        if (moduleName === MARKER) {
+          return { type: 'sourceFile', filePath: realImpl };
+        }
+        if (OPTIONAL_PEERS.includes(moduleName) && !isInstalled(moduleName)) {
+          return { type: 'sourceFile', filePath: emptyModulePath };
+        }
+        if (prev) return prev(context, moduleName, platform);
+        return context.resolveRequest(context, moduleName, platform);
+      },
     },
   };
-  return config;
+  return nextConfig;
 }
 
 export default withInspectorCompat;
