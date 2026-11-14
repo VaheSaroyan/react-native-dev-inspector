@@ -20,7 +20,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # The test scripts use `node --test <glob>`, which requires Node 21+
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
