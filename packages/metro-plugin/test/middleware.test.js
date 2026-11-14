@@ -72,6 +72,17 @@ if (process.platform === 'win32') {
 const fakeEditor =
   process.platform === 'win32' ? shimPath.replace(/\\/g, '\\\\') : shimPath;
 
+// launch-editor spawns the editor asynchronously, so poll the log instead of
+// sleeping a fixed time: a fixed delay is too short on a loaded machine.
+async function readLogWhenWritten(timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const logged = fs.readFileSync(logFile, 'utf8');
+    if (logged !== '' || Date.now() >= deadline) return logged;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+}
+
 const projectRoot = path.resolve(__dirname, '..');
 const existingFile = path.relative(projectRoot, path.join(projectRoot, 'package.json'));
 
@@ -156,9 +167,7 @@ test('openInEditor passes file:line:column to the editor', async () => {
   );
   assert.equal(result.success, true);
 
-  // launch-editor spawns asynchronously; give it a moment to write the log.
-  await new Promise((r) => setTimeout(r, 400));
-  const logged = fs.readFileSync(logFile, 'utf8');
+  const logged = await readLogWhenWritten();
   assert.match(
     logged,
     /package\.json:42:7/,
@@ -207,9 +216,8 @@ test('an explicitly configured editor wins over ambient env vars', async () => {
       { cwd: projectRoot, editor: fakeEditor }
     );
     assert.equal(result.success, true);
-    await new Promise((r) => setTimeout(r, 400));
     assert.match(
-      fs.readFileSync(logFile, 'utf8'),
+      await readLogWhenWritten(),
       /package\.json/,
       'the editor from withInspector() options should have been used'
     );
