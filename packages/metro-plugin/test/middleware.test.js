@@ -22,17 +22,50 @@ delete process.env.EDITOR;
 delete process.env.VISUAL;
 
 // A stand-in "editor" that records its arguments instead of launching anything.
+//
+// Cross-platform by construction (see issue #3): Windows neither honours a
+// shebang nor an executable bit, so a bare `subl` script only works on POSIX.
+// The executable we hand to launch-editor is therefore platform-specific:
+// - win32 : a `subl.cmd` batch shim that forwards to node. launch-editor's
+//   get-args.js strips the .cmd extension before matching editor names, so it
+//   is still recognised as `subl` and keeps formatting file:line:column, and
+//   launch-editor spawns editors through cmd.exe (`exec` + `shell: true`),
+//   which resolves .cmd files natively.
+// - else  : the original shebang script + chmod 0o755.
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rn-inspector-test-'));
 const logFile = path.join(tmpDir, 'args.log');
+// The actual recorder: plain node script, no shebang needed anywhere.
+const recorderScript = path.join(tmpDir, 'subl.js');
+fs.writeFileSync(
+  recorderScript,
+  `require('fs').appendFileSync(${JSON.stringify(logFile)}, process.argv.slice(2).join(' ') + '\\n');\n`
+);
 // Named `subl` so launch-editor formats the position as `file:line:column`.
 // (For editor names it does not recognise it drops the position entirely.)
-const fakeEditor = path.join(tmpDir, 'subl');
-fs.writeFileSync(
-  fakeEditor,
-  `#!/usr/bin/env node\n` +
-    `require('fs').appendFileSync(${JSON.stringify(logFile)}, process.argv.slice(2).join(' ') + '\\n');\n`
-);
-fs.chmodSync(fakeEditor, 0o755);
+const shimPath =
+  process.platform === 'win32'
+    ? path.join(tmpDir, 'subl.cmd')
+    : path.join(tmpDir, 'subl');
+if (process.platform === 'win32') {
+  // %~dp0 is the shim's own directory (trailing backslash included), so the
+  // recorder path stays correct no matter where the caller's cwd is.
+  fs.writeFileSync(
+    shimPath,
+    `@echo off\nnode "%~dp0subl.js" %*\n`
+  );
+} else {
+  fs.copyFileSync(recorderScript, shimPath);
+  fs.chmodSync(shimPath, 0o755);
+}
+
+// What we hand to launch-editor as the configured editor. On Windows this
+// must double the backslashes: guess.js runs the configured editor through
+// shell-quote's POSIX-ish parse(), which consumes single backslashes as
+// escape characters — a raw `C:\...\subl.cmd` would be mangled into a
+// nonexistent `C:...subl.cmd` and the launch would exit 1. Doubling them
+// round-trips through parse() into the real path.
+const fakeEditor =
+  process.platform === 'win32' ? shimPath.replace(/\\/g, '\\\\') : shimPath;
 
 const projectRoot = path.resolve(__dirname, '..');
 const existingFile = path.relative(projectRoot, path.join(projectRoot, 'package.json'));
