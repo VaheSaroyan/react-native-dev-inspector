@@ -54,7 +54,12 @@ if (process.platform === 'win32') {
     `@echo off\nnode "%~dp0subl.js" %*\n`
   );
 } else {
-  fs.copyFileSync(recorderScript, shimPath);
+  // POSIX honours the shebang and the executable bit, so the shim is the
+  // recorder with a node shebang prepended.
+  fs.writeFileSync(
+    shimPath,
+    `#!/usr/bin/env node\n` + fs.readFileSync(recorderScript, 'utf8')
+  );
   fs.chmodSync(shimPath, 0o755);
 }
 
