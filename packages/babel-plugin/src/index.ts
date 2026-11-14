@@ -350,7 +350,14 @@ export default function reactNativeDevInspectorPlugin(
         const column = loc.start.column + 1; // 1-indexed for editors
 
         // Calculate relative path
-        const relativePath = path.relative(cwd, filename);
+        // Normalise separators to `/`: this string becomes part of the
+        // injected source identity (testID / __callerSource / 
+        // dataInspectorSource) and must be identical regardless of the OS
+        // running the bundler — Windows backslashes would also break every
+        // consumer that treats the value as a URL-ish path.
+        const relativePath = path.relative(cwd, filename)
+          .split(path.sep)
+          .join('/');
 
         // Get component name
         const nameNode = nodePath.node.name;
