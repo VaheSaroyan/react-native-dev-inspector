@@ -205,19 +205,25 @@ function bindCallerSource(
       ),
     ]);
 
-    if (t.isBlockStatement(node.body)) {
-      node.body.body.unshift(decl);
-      return true;
-    }
-
     // Concise arrow body: `(props) => <View />`. Expand it into a block so we
     // have somewhere to put the declaration.
-    if (t.isExpression(node.body)) {
-      node.body = t.blockStatement([decl, t.returnStatement(node.body)]);
-      return true;
+    //
+    // This must go through the path API. Assigning `node.body` directly leaves
+    // every cached NodePath inside the old body pointing at the function as its
+    // container, so a later plugin that replaces the returned JSX (the JSX
+    // transform) writes its result over the new block instead of into the
+    // `return`. The declaration is lost and untransformed JSX is left behind,
+    // which then crashes whatever traverses the file next. It only shows up
+    // when arrow functions survive the preset, e.g. Hermes transform profiles.
+    if (!t.isBlockStatement(node.body)) {
+      if (!t.isExpression(node.body)) return false;
+      funcPath.ensureBlock();
     }
 
-    return false;
+    const bodyPath = funcPath.get('body');
+    if (Array.isArray(bodyPath) || !bodyPath.isBlockStatement()) return false;
+    bodyPath.unshiftContainer('body', decl);
+    return true;
   };
 
   const addToObjectPattern = (pattern: t.ObjectPattern): boolean => {
@@ -244,7 +250,7 @@ function bindCallerSource(
   };
 
   if (node.params.length === 0) {
-    node.params.push(t.objectPattern([
+    funcPath.pushContainer('params', t.objectPattern([
       t.objectProperty(t.identifier(CALLER_SOURCE), t.identifier(CALLER_SOURCE), false, true),
     ]));
     funcPath.scope.crawl();

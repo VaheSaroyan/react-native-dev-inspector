@@ -208,6 +208,35 @@ test('concise arrow body is expanded into a block when needed', () => {
   assert.match(out, /return <View/);
 });
 
+test('expanding a concise arrow body keeps later plugins in sync', () => {
+  // A stand-in for the JSX transform: replaces each JSX element on exit, in the
+  // same pass. If the body was expanded behind Babel's back, this replacement
+  // lands on the arrow's body instead of the `return`, dropping the injected
+  // declaration. Arrow functions must survive for this to show, as they do
+  // under Hermes transform profiles.
+  const replaceJsx = ({ types: t }) => ({
+    visitor: {
+      JSXElement: {
+        exit(path) {
+          path.replaceWith(t.callExpression(t.identifier('h'), []));
+        },
+      },
+    },
+  });
+
+  const { code } = babel.transformSync('const A = props => <View><Image /></View>;', {
+    filename: FILE,
+    cwd: CWD,
+    configFile: false,
+    babelrc: false,
+    parserOpts: { plugins: ['jsx', 'typescript'] },
+    plugins: [[plugin.default || plugin, { cwd: CWD }], replaceJsx],
+  });
+
+  assert.match(code, /const __callerSource = props\.__callerSource;\s*return h\(\);/);
+  assert.doesNotMatch(code, /<View/);
+});
+
 test('does not rebind __callerSource when the author already declared it', () => {
   const out = transformAndReparse(
     'function Foo({ __callerSource }) { return <View><Text>hi</Text></View>; }'
