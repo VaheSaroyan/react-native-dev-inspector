@@ -10,6 +10,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 
+// Must run before launch-editor is required: it wraps launch-editor's
+// get-args in the require cache (WebStorm 2023.3+ needs the project
+// directory as the first argument for --line/--column to be honored)
+import './patch-launch-editor-webstorm';
+
 // @ts-ignore - launch-editor doesn't have types
 import launchEditor from 'launch-editor';
 

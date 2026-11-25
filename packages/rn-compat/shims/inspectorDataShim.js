@@ -76,7 +76,7 @@ function walkFiberTree(root, maxVisited, visit, maxDepth) {
 
 function pickSourceFiber(fiber) {
   try {
-    if (fiber && fiber.memoizedProps && fiber.memoizedProps.__callerSource) {
+    if (fiber && parseCallerSourceRaw(fiber.memoizedProps)) {
       return fiber;
     }
     // DFS from the child (the root fiber itself was already checked above);
@@ -84,10 +84,7 @@ function pickSourceFiber(fiber) {
     const found = walkFiberTree(
       fiber && fiber.child,
       300,
-      node => {
-        const p = node.memoizedProps;
-        return p && p.__callerSource ? node : null;
-      },
+      node => (parseCallerSourceRaw(node.memoizedProps) ? node : null),
       11
     );
     return found || fiber;
@@ -180,12 +177,45 @@ const NATIVE_NAMES = new Set([
   'Animated',
 ]);
 
-// __callerSource may be an object {fileName,lineNumber,columnNumber} or a JSON string
+/** Parse a "ComponentName@file:line:column" string (the @rn-dev-inspector/babel-plugin format). */
+function parseSourceString(s) {
+  const m = /^([^@]+)@(.+):(\d+):(\d+)$/.exec(s);
+  if (!m) return null;
+  return {
+    componentName: m[1],
+    fileName: m[2],
+    lineNumber: parseInt(m[3], 10),
+    columnNumber: parseInt(m[4], 10),
+  };
+}
+
+// __callerSource comes in three shapes: the {fileName,lineNumber,columnNumber}
+// object (metro-plugin's built-in babel plugin), a JSON string, and the
+// "Name@file:line:col" string from @rn-dev-inspector/babel-plugin. That plugin
+// also injects dataInspectorSource (same string shape) on every element while
+// only *user* components get __callerSource, so dataInspectorSource is used as
+// a fallback here - otherwise host elements would be misclassified as
+// non-business source by isProjectSourceFiber and filtered out of the hierarchy.
 function parseCallerSourceRaw(props) {
   try {
-    const cs = props && props.__callerSource;
-    if (!cs) return null;
-    return typeof cs === 'string' ? JSON.parse(cs) : cs;
+    if (!props) return null;
+    const cs = props.__callerSource;
+    if (cs) {
+      if (typeof cs === 'object') return cs;
+      if (typeof cs === 'string') {
+        try {
+          return JSON.parse(cs);
+        } catch (e) {
+          const parsed = parseSourceString(cs);
+          if (parsed) return parsed;
+        }
+      }
+    }
+    const ds = props.dataInspectorSource;
+    if (typeof ds === 'string') {
+      return parseSourceString(ds);
+    }
+    return null;
   } catch (e) {
     return null;
   }

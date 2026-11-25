@@ -20,6 +20,7 @@ export {
   getFiberName,
   getCodeInfoFromFiber,
   parseTestIdForSource,
+  parseCallerSource,
   isUserComponent,
   isHostComponent,
   getFiberStack,

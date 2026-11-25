@@ -75,10 +75,17 @@ const fakeEditor =
 // launch-editor spawns the editor asynchronously, so poll the log instead of
 // sleeping a fixed time: a fixed delay is too short on a loaded machine.
 async function readLogWhenWritten(timeoutMs = 5000) {
+  return readLogUntilWritten((logged) => logged !== '', timeoutMs);
+}
+
+// Same poll, but only settle once the log matches: a spawned editor from an
+// earlier test can still append its line after the log was truncated, so
+// "the file is non-empty" is not enough to know this call was recorded.
+async function readLogUntilWritten(predicate, timeoutMs = 5000) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const logged = fs.readFileSync(logFile, 'utf8');
-    if (logged !== '' || Date.now() >= deadline) return logged;
+    if (predicate(logged) || Date.now() >= deadline) return logged;
     await new Promise((r) => setTimeout(r, 25));
   }
 }
@@ -167,7 +174,7 @@ test('openInEditor passes file:line:column to the editor', async () => {
   );
   assert.equal(result.success, true);
 
-  const logged = await readLogWhenWritten();
+  const logged = await readLogUntilWritten((text) => /package\.json:42:7/.test(text));
   assert.match(
     logged,
     /package\.json:42:7/,

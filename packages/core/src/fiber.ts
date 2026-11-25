@@ -328,34 +328,59 @@ export function parseTestIdForSource(testId: string): CodeInfo | null {
 }
 
 /**
+ * Parse a __callerSource / dataInspectorSource value. Two injection formats are
+ * supported: the "ComponentName@file:line:column" string written by
+ * @rn-dev-inspector/babel-plugin, and the { fileName, lineNumber, columnNumber }
+ * object written by metro-plugin's built-in babel plugin.
+ */
+export function parseCallerSource(source: unknown, componentName?: string): CodeInfo | null {
+  if (!source) return null;
+
+  if (typeof source === 'object') {
+    const obj = source as { fileName?: string; lineNumber?: number; columnNumber?: number };
+    if (obj.fileName) {
+      return {
+        relativePath: obj.fileName,
+        lineNumber: obj.lineNumber || 1,
+        columnNumber: obj.columnNumber || 1,
+        componentName: componentName || 'Component',
+      };
+    }
+    return null;
+  }
+
+  if (typeof source === 'string') {
+    return parseTestIdForSource(source);
+  }
+
+  return null;
+}
+
+/**
  * Extract code info from fiber's testID, _debugSource, or inspector attributes
  */
 export function getCodeInfoFromFiber(fiber: Fiber): CodeInfo | null {
   const props = fiber.memoizedProps || {};
 
-  // First, try testID (format: ComponentName@file:line:column). For the root
-  // element of a user component the babel plugin sets this to the component's
-  // call site, which is what you usually want to jump to.
-  const testId = props.testID;
-  if (testId) {
-    const parsed = parseTestIdForSource(testId);
-    if (parsed) return parsed;
-  }
+  // First, dataInspectorSource: the babel plugin writes it on every element and
+  // records where that element is literally written. It is never overwritten by
+  // user-defined testIDs, so it is the most trustworthy signal.
+  const dataParsed = parseCallerSource(props.dataInspectorSource, getFiberName(fiber));
+  if (dataParsed) return dataParsed;
 
   // Next, __callerSource: present on user components, records where the
   // component was used rather than where it was defined.
-  const callerSource = props.__callerSource;
-  if (callerSource) {
-    const parsed = parseTestIdForSource(callerSource);
-    if (parsed) return parsed;
-  }
+  const callerParsed = parseCallerSource(props.__callerSource, getFiberName(fiber));
+  if (callerParsed) return callerParsed;
 
-  // Next, dataInspectorSource. The babel plugin always sets this, and unlike
-  // testID it is never overwritten by user-defined test identifiers, so it is
-  // the reliable fallback when someone sets their own testID.
-  const dataSource = props.dataInspectorSource;
-  if (dataSource) {
-    const parsed = parseTestIdForSource(dataSource);
+  // Finally testID (format: ComponentName@file:line:column). Careful: for the
+  // first native element of a user component the babel plugin forwards the
+  // *enclosing component's* call site into testID, so this value can describe an
+  // ancestor rather than the element itself — only trust it when nothing better
+  // exists.
+  const testId = props.testID;
+  if (testId) {
+    const parsed = parseTestIdForSource(testId);
     if (parsed) return parsed;
   }
 
@@ -463,6 +488,19 @@ const SKIP_COMPONENT_NAMES = [
   'RootLayout',
   'Layout',
   'ErrorBoundary',
+  'ContextNavigator',
+  'ContextNavigationContainer',
+  'ExpoRoot',
+  'RootErrorBoundary',
+  'Try',
+  'Freeze',
+  'DelayedFreeze',
+  'RouterRoot',
+  'RootLayoutNav',
+  'Navigator',
+  'useFilterScreenChildren',
+  'Route',
+  'EmptyRoute',
 ];
 
 /**
