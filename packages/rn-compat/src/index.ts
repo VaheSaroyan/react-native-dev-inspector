@@ -46,7 +46,7 @@ const MARKER = '__rn_dev_inspector_original_impl__';
 // Optional peers: resolve to an empty module when not installed so core's
 // try/catch degrades gracefully (otherwise Metro generates a stub that throws
 // at runtime and dev reports "Requiring unknown module")
-const OPTIONAL_PEERS = ['expo-dev-menu', 'expo-dev-client'];
+const OPTIONAL_PEERS = ['expo-dev-menu', 'expo-dev-client', 'react-native-safe-area-context'];
 
 interface WithInspectorCompatOptions {
   /** App root directory; defaults to config.projectRoot or process.cwd() */
